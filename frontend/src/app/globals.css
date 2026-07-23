@@ -1,0 +1,426 @@
+:root {
+  --yellow: #fcb913;
+  --black: #171717;
+  --black-soft: #232323;
+  --white: #ffffff;
+  --gray: #a3a3a3;
+  --border: rgba(255, 255, 255, 0.12);
+  --success: #32c875;
+  --danger: #e45b5b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(252, 185, 19, 0.12), transparent 28%),
+    var(--black);
+  color: var(--white);
+  font-family: Arial, "Noto Sans Hebrew", "Segoe UI", sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+main {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.topbar {
+  min-height: 90px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandMark {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: var(--yellow);
+  color: var(--black);
+  font-size: 27px;
+  font-weight: 900;
+}
+
+.brand strong,
+.brand span {
+  display: block;
+}
+
+.brand strong {
+  font-size: 17px;
+}
+
+.brand span {
+  margin-top: 4px;
+  color: var(--gray);
+  font-size: 12px;
+}
+
+.systemStatus {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  color: #d1d1d1;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.online .statusDot {
+  background: var(--success);
+  box-shadow: 0 0 0 5px rgba(50, 200, 117, 0.13);
+}
+
+.offline .statusDot {
+  background: var(--danger);
+}
+
+.hero {
+  min-height: 560px;
+  border-radius: 34px;
+  padding: 72px;
+  display: grid;
+  grid-template-columns: 1.35fr 0.65fr;
+  align-items: center;
+  gap: 70px;
+  background:
+    linear-gradient(118deg, var(--yellow) 0%, #ffd76e 60%, #f6ca50 100%);
+  color: var(--black);
+  overflow: hidden;
+}
+
+.eyebrow {
+  display: inline-flex;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hero h1 {
+  margin: 22px 0;
+  font-size: clamp(48px, 6vw, 82px);
+  line-height: 0.97;
+  letter-spacing: -4px;
+}
+
+.hero h1 span {
+  color: var(--white);
+  text-shadow: 0 7px 24px rgba(0, 0, 0, 0.16);
+}
+
+.heroContent > p {
+  max-width: 670px;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.75;
+}
+
+.searchBox {
+  margin-top: 32px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 9px;
+  background: var(--white);
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16);
+}
+
+.searchBox input {
+  min-height: 56px;
+  padding: 0 18px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--black);
+  font-size: 16px;
+}
+
+.searchBox button {
+  min-width: 110px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--black);
+  color: var(--white);
+  font-weight: 800;
+}
+
+.suggestions {
+  margin-top: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestions button {
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.17);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.36);
+  color: var(--black);
+  font-size: 12px;
+}
+
+.heroCard {
+  padding: 30px;
+  border-radius: 27px;
+  background: var(--black-soft);
+  color: var(--white);
+  box-shadow: 0 28px 65px rgba(0, 0, 0, 0.28);
+  transform: rotate(-2deg);
+}
+
+.assistantLogo {
+  width: 70px;
+  height: 70px;
+  margin-bottom: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: var(--yellow);
+  color: var(--black);
+  font-weight: 900;
+}
+
+.heroCard > span,
+.heroCard > strong {
+  display: block;
+}
+
+.heroCard > span {
+  color: var(--gray);
+  font-size: 12px;
+}
+
+.heroCard > strong {
+  margin-top: 7px;
+  font-size: 23px;
+  line-height: 1.4;
+}
+
+.heroCard ul {
+  margin: 28px 0 0;
+  padding-right: 19px;
+  color: #d4d4d4;
+  line-height: 2;
+  font-size: 13px;
+}
+
+.resultPanel {
+  margin-top: 28px;
+  padding: 30px;
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  gap: 30px;
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  background: var(--black-soft);
+}
+
+.resultPanel span {
+  color: var(--yellow);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.resultPanel h2 {
+  margin: 7px 0 0;
+}
+
+.resultMessage {
+  padding: 20px;
+  border-radius: 17px;
+  background: var(--white);
+  color: var(--black);
+}
+
+.resultMessage p {
+  margin: 8px 0 0;
+  line-height: 1.7;
+  color: #5d5d5d;
+}
+
+.portalSection {
+  padding: 80px 0;
+}
+
+.sectionTitle span {
+  color: var(--yellow);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sectionTitle h2 {
+  margin: 8px 0 26px;
+  font-size: 40px;
+}
+
+.portalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.portalCard {
+  min-height: 220px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: right;
+  border: 1px solid #e6e6e6;
+  border-radius: 22px;
+  background: var(--white);
+  color: var(--black);
+  transition: transform 180ms ease;
+}
+
+.portalCard:hover {
+  transform: translateY(-5px);
+}
+
+.portalIcon {
+  font-size: 28px;
+}
+
+.portalCard strong {
+  margin-top: 21px;
+  font-size: 21px;
+}
+
+.portalCard p {
+  margin: 8px 0;
+  color: #6b6b6b;
+  line-height: 1.55;
+}
+
+.portalLink {
+  margin-top: auto;
+  color: #246ed6;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+footer {
+  padding: 28px 0 45px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+  color: var(--gray);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    padding: 48px;
+    grid-template-columns: 1fr;
+  }
+
+  .heroCard {
+    display: none;
+  }
+
+  .portalGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  main {
+    width: min(100% - 20px, 1240px);
+  }
+
+  .topbar {
+    min-height: 76px;
+  }
+
+  .systemStatus {
+    max-width: 150px;
+  }
+
+  .hero {
+    min-height: auto;
+    padding: 40px 23px 58px;
+    border-radius: 25px;
+  }
+
+  .hero h1 {
+    font-size: 44px;
+    letter-spacing: -2px;
+  }
+
+  .heroContent > p {
+    font-size: 15px;
+  }
+
+  .searchBox {
+    grid-template-columns: 1fr;
+  }
+
+  .searchBox button {
+    min-height: 48px;
+  }
+
+  .resultPanel {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  .portalSection {
+    padding: 55px 0;
+  }
+
+  .sectionTitle h2 {
+    font-size: 31px;
+  }
+
+  .portalGrid {
+    grid-template-columns: 1fr;
+  }
+
+  footer {
+    display: block;
+  }
+
+  footer span {
+    display: block;
+    margin-top: 7px;
+  }
+}

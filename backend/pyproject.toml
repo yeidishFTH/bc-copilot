@@ -1,0 +1,9 @@
+[project]
+name = "bc-copilot-backend"
+version = "0.1.0"
+description = "Bitcoin Change Copilot backend"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
