@@ -5,11 +5,11 @@ import pytest
 
 from app.services.knowledge import (
     KnowledgeCategory,
+    KnowledgeDocument,
+    KnowledgeDocumentRevision,
     KnowledgeLink,
     KnowledgeNotFoundError,
-    KnowledgePage,
     KnowledgeRateLimitError,
-    KnowledgeRevision,
     KnowledgeSource,
 )
 
@@ -33,21 +33,24 @@ class FakeKnowledgeSource:
         *,
         namespace_id: int = 0,
         limit: int | None = None,
-    ) -> list[KnowledgePage]:
+    ) -> list[KnowledgeDocument]:
         del namespace_id, limit
         return []
 
-    async def get_page(self, identifier: str) -> KnowledgePage:
-        return KnowledgePage(
+    async def get_page(self, identifier: str) -> KnowledgeDocument:
+        return KnowledgeDocument(
             id=identifier,
             title="Test Page",
             canonical_url="https://example.test/wiki/Test_Page",
         )
 
-    async def get_revision(self, revision_id: str) -> KnowledgeRevision:
-        return KnowledgeRevision(
+    async def get_revision(
+        self,
+        revision_id: str,
+    ) -> KnowledgeDocumentRevision:
+        return KnowledgeDocumentRevision(
             id=revision_id,
-            page_id="1",
+            document_id="1",
             timestamp=datetime(2026, 7, 23, tzinfo=UTC),
             raw_content="Test content",
         )
@@ -60,8 +63,8 @@ class FakeKnowledgeSource:
         return [KnowledgeCategory(name="Test")]
 
 
-def test_knowledge_page_has_immutable_domain_data() -> None:
-    page = KnowledgePage(
+def test_knowledge_document_has_immutable_domain_data() -> None:
+    document = KnowledgeDocument(
         id="123",
         title="נוהל פתיחת סניף",
         canonical_url="https://wiki.example.test/נוהל_פתיחת_סניף",
@@ -70,11 +73,11 @@ def test_knowledge_page_has_immutable_domain_data() -> None:
         links=(KnowledgeLink(target_title="צ'קליסט פתיחה"),),
     )
 
-    assert page.categories[0].name == "נהלים"
-    assert page.links[0].target_title == "צ'קליסט פתיחה"
+    assert document.categories[0].name == "נהלים"
+    assert document.links[0].target_title == "צ'קליסט פתיחה"
 
     with pytest.raises(FrozenInstanceError):
-        page.title = "Changed"  # type: ignore[misc]
+        document.title = "Changed"  # type: ignore[misc]
 
 
 def test_fake_adapter_satisfies_knowledge_source_protocol() -> None:
@@ -90,21 +93,21 @@ async def test_fake_adapter_returns_domain_models() -> None:
 
     assert await source.health() is True
 
-    page = await source.get_page("123")
+    document = await source.get_page("123")
     revision = await source.get_revision("987")
     categories = await source.get_categories("123")
 
-    assert page.id == "123"
-    assert revision.page_id == "1"
+    assert document.id == "123"
+    assert revision.document_id == "1"
     assert categories == [KnowledgeCategory(name="Test")]
 
 
 def test_not_found_error_keeps_resource_context() -> None:
-    error = KnowledgeNotFoundError("page", "Missing Page")
+    error = KnowledgeNotFoundError("document", "Missing Page")
 
-    assert error.resource == "page"
+    assert error.resource == "document"
     assert error.identifier == "Missing Page"
-    assert str(error) == "page not found: Missing Page"
+    assert str(error) == "document not found: Missing Page"
 
 
 def test_rate_limit_error_keeps_retry_hint() -> None:

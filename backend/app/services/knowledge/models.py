@@ -6,7 +6,7 @@ from datetime import datetime
 
 @dataclass(frozen=True, slots=True)
 class KnowledgeCategory:
-    """A source-neutral category assigned to a knowledge page."""
+    """A source-neutral category assigned to a knowledge document."""
 
     name: str
     display_name: str | None = None
@@ -14,18 +14,18 @@ class KnowledgeCategory:
 
 @dataclass(frozen=True, slots=True)
 class KnowledgeLink:
-    """A source-neutral link from one knowledge page to another."""
+    """A source-neutral link from one knowledge document to another."""
 
     target_title: str
-    target_page_id: str | None = None
+    target_document_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
-class KnowledgeRevision:
+class KnowledgeDocumentRevision:
     """An immutable revision retrieved from a knowledge source."""
 
     id: str
-    page_id: str
+    document_id: str
     timestamp: datetime
     raw_content: str
     parent_id: str | None = None
@@ -35,8 +35,8 @@ class KnowledgeRevision:
 
 
 @dataclass(frozen=True, slots=True)
-class KnowledgePage:
-    """Source-neutral page metadata and its current relationships."""
+class KnowledgeDocument:
+    """Source-neutral document metadata and its current relationships."""
 
     id: str
     title: str

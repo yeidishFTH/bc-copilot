@@ -7,9 +7,9 @@ from app.services.knowledge.exceptions import (
 )
 from app.services.knowledge.models import (
     KnowledgeCategory,
+    KnowledgeDocument,
+    KnowledgeDocumentRevision,
     KnowledgeLink,
-    KnowledgePage,
-    KnowledgeRevision,
 )
 from app.services.knowledge.protocol import KnowledgeSource
 
@@ -17,11 +17,11 @@ __all__ = [
     "KnowledgeAuthenticationError",
     "KnowledgeCategory",
     "KnowledgeConnectionError",
+    "KnowledgeDocument",
+    "KnowledgeDocumentRevision",
     "KnowledgeLink",
     "KnowledgeNotFoundError",
-    "KnowledgePage",
     "KnowledgeRateLimitError",
-    "KnowledgeRevision",
     "KnowledgeSource",
     "KnowledgeSourceError",
 ]

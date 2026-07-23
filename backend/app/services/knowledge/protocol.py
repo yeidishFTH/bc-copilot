@@ -5,8 +5,8 @@ from typing import Protocol, runtime_checkable
 
 from app.services.knowledge.models import (
     KnowledgeCategory,
-    KnowledgePage,
-    KnowledgeRevision,
+    KnowledgeDocument,
+    KnowledgeDocumentRevision,
 )
 
 
@@ -36,15 +36,18 @@ class KnowledgeSource(Protocol):
         *,
         namespace_id: int = 0,
         limit: int | None = None,
-    ) -> Sequence[KnowledgePage]:
-        """Return pages available in the requested namespace."""
+    ) -> Sequence[KnowledgeDocument]:
+        """Return documents available in the requested namespace."""
         ...
 
-    async def get_page(self, identifier: str) -> KnowledgePage:
-        """Return a page by source-specific ID or canonical title."""
+    async def get_page(self, identifier: str) -> KnowledgeDocument:
+        """Return a document by source-specific ID or canonical title."""
         ...
 
-    async def get_revision(self, revision_id: str) -> KnowledgeRevision:
+    async def get_revision(
+        self,
+        revision_id: str,
+    ) -> KnowledgeDocumentRevision:
         """Return one immutable revision by its source-specific ID."""
         ...
 
@@ -52,5 +55,5 @@ class KnowledgeSource(Protocol):
         self,
         page_identifier: str,
     ) -> Sequence[KnowledgeCategory]:
-        """Return categories assigned to the requested page."""
+        """Return categories assigned to the requested document."""
         ...
