@@ -6,3 +6,8 @@ class HealthResponse(BaseModel):
     service: str
     environment: str
     version: str
+
+
+class DatabaseHealthResponse(BaseModel):
+    status: str
+    database: str

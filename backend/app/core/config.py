@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -7,7 +8,16 @@ class Settings(BaseSettings):
     app_name: str = "Bitcoin Change Copilot API"
     app_env: str = "development"
     frontend_origin: str = "http://localhost:3000"
+
+    database_url: str = (
+        "postgresql+asyncpg://bc_copilot:bc_copilot_dev_password"
+        "@localhost:5432/bc_copilot"
+    )
+    database_echo: bool = False
+
     mediawiki_api_url: str = "https://wiki.bitcoinchange.co.il/api.php"
+    mediawiki_bot_username: str | None = None
+    mediawiki_bot_password: SecretStr | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
