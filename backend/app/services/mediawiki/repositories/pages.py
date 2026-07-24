@@ -9,7 +9,7 @@ from app.services.knowledge import (
 )
 from app.services.mediawiki.api import MediaWikiAPI
 from app.services.mediawiki.exceptions import MediaWikiProtocolError
-from app.services.mediawiki.mapper import MediaWikiMapper
+from app.services.mediawiki.mappers import MediaWikiPageMapper
 
 
 class MediaWikiPageRepository:
@@ -19,10 +19,10 @@ class MediaWikiPageRepository:
         self,
         *,
         api: MediaWikiAPI,
-        mapper: MediaWikiMapper | None = None,
+        mapper: MediaWikiPageMapper | None = None,
     ) -> None:
         self._api = api
-        self._mapper = mapper or MediaWikiMapper()
+        self._mapper = mapper or MediaWikiPageMapper()
 
     async def list_pages(
         self,

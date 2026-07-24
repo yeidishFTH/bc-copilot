@@ -5,7 +5,10 @@ from app.services.mediawiki.exceptions import (
     MediaWikiError,
     MediaWikiProtocolError,
 )
-from app.services.mediawiki.mapper import MediaWikiMapper
+from app.services.mediawiki.mappers import (
+    MediaWikiMapper,
+    MediaWikiPageMapper,
+)
 from app.services.mediawiki.models import (
     MediaWikiCredentials,
     MediaWikiSession,
@@ -29,6 +32,7 @@ __all__ = [
     "MediaWikiError",
     "MediaWikiKnowledgeSource",
     "MediaWikiMapper",
+    "MediaWikiPageMapper",
     "MediaWikiPageReader",
     "MediaWikiPageRepository",
     "MediaWikiProtocolError",
