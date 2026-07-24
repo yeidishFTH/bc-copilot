@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from collections.abc import Sequence
+
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import KnowledgePage, KnowledgeRevision
+from app.db.models import (
+    KnowledgeChunk,
+    KnowledgePage,
+    KnowledgeRevision,
+)
 from app.services.knowledge.models import (
+    KnowledgeChunkDraft,
     KnowledgeDocument,
     KnowledgeDocumentRevision,
 )
@@ -60,6 +67,43 @@ class KnowledgeDocumentRepository:
         result = await self._session.execute(statement)
 
         return result.scalar_one_or_none()
+
+    async def replace_chunks(
+        self,
+        *,
+        revision: KnowledgeRevision,
+        chunks: Sequence[KnowledgeChunkDraft],
+    ) -> list[KnowledgeChunk]:
+        """
+        Replace every persisted chunk belonging to one revision.
+
+        Existing chunks are deleted before the ordered replacement is
+        inserted. The repository flushes but never commits, leaving
+        transaction ownership with the caller.
+        """
+
+        if revision.id is None:
+            raise ValueError(
+                "revision.id is required before replacing chunks"
+            )
+
+        await self._session.execute(
+            delete(KnowledgeChunk).where(
+                KnowledgeChunk.revision_id == revision.id
+            )
+        )
+
+        persistence_chunks = self._mapper.chunks_to_models(
+            chunks,
+            revision=revision,
+        )
+
+        if persistence_chunks:
+            self._session.add_all(persistence_chunks)
+
+        await self._session.flush()
+
+        return persistence_chunks
 
     async def upsert(
         self,
