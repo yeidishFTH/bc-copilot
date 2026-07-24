@@ -10,7 +10,10 @@ from app.services.sync.models import (
     SyncExecutionResult,
 )
 from app.services.sync.pipeline import (
+    BuildChunksStep,
     FetchRevisionStep,
+    PersistChunksStep,
+    PersistChunksStep,
     PersistDocumentStep,
     SyncPageState,
     SyncPipeline,
@@ -19,7 +22,10 @@ from app.services.sync.pipeline import (
 )
 
 __all__ = [
+    "BuildChunksStep",
     "FetchRevisionStep",
+    "PersistChunksStep",
+    "PersistChunksStep",
     "PersistDocumentStep",
     "SyncContext",
     "SyncCounters",

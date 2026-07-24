@@ -5,9 +5,14 @@ from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from app.services.knowledge import (
+    KnowledgeChunkDraft,
     KnowledgeDocument,
     KnowledgeDocumentRevision,
     KnowledgeSource,
+)
+from app.services.wiki_parser import (
+    KnowledgeChunkBuilder,
+    WikiDocumentParser,
 )
 from app.services.knowledge.persistence import (
     DocumentUpsertResult,
@@ -26,6 +31,7 @@ class SyncPageState:
 
     document: KnowledgeDocument
     revision: KnowledgeDocumentRevision | None = None
+    chunks: tuple[KnowledgeChunkDraft, ...] = ()
     upsert_result: DocumentUpsertResult | None = None
 
     def require_revision(self) -> KnowledgeDocumentRevision:
@@ -75,6 +81,25 @@ class FetchRevisionStep:
         state.revision = await self._source.get_revision(revision_id)
 
 
+class BuildChunksStep:
+    """Build immutable chunk drafts from revision wikitext."""
+
+    def __init__(
+        self,
+        *,
+        parser: WikiDocumentParser | None = None,
+        builder: KnowledgeChunkBuilder | None = None,
+    ) -> None:
+        self._parser = parser or WikiDocumentParser()
+        self._builder = builder or KnowledgeChunkBuilder()
+
+    async def execute(self, state: SyncPageState) -> None:
+        revision = state.require_revision()
+        document = self._parser.parse(revision.raw_content)
+        state.chunks = self._builder.build(document)
+
+
+
 class PersistDocumentStep:
     """Persist the fetched document aggregate."""
 
@@ -90,6 +115,24 @@ class PersistDocumentStep:
         state.upsert_result = await self._repository.upsert(
             document=state.document,
             revision=revision,
+        )
+
+
+class PersistChunksStep:
+    """Persist the ordered chunk drafts built for one revision."""
+
+    def __init__(
+        self,
+        repository: KnowledgeDocumentRepository,
+    ) -> None:
+        self._repository = repository
+
+    async def execute(self, state: SyncPageState) -> None:
+        result = state.require_upsert_result()
+
+        await self._repository.replace_chunks(
+            revision=result.revision,
+            chunks=state.chunks,
         )
 
 
@@ -137,6 +180,8 @@ def build_default_sync_pipeline(
     return SyncPipeline(
         steps=(
             FetchRevisionStep(source),
+            BuildChunksStep(),
             PersistDocumentStep(documents),
+            PersistChunksStep(documents),
         )
     )
