@@ -122,8 +122,19 @@ class FakeDocumentRepository:
             raise self.failures[document.id]
 
         return SimpleNamespace(
-            status=self.statuses[document.id]
+            status=self.statuses[document.id],
+            revision=SimpleNamespace(
+                id=f"revision-{document.id}"
+            ),
         )
+
+    async def replace_chunks(
+        self,
+        *,
+        revision: Any,
+        chunks: Any,
+    ) -> list[Any]:
+        return []
 
 
 class FakeSyncRepository:
