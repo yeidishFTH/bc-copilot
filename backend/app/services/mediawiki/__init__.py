@@ -16,6 +16,7 @@ from app.services.mediawiki.models import (
 )
 from app.services.mediawiki.repositories import (
     MediaWikiPageRepository,
+    MediaWikiRevisionRepository,
 )
 from app.services.mediawiki.source import (
     MediaWikiCategoryReader,
@@ -38,6 +39,7 @@ __all__ = [
     "MediaWikiPageRepository",
     "MediaWikiProtocolError",
     "MediaWikiRevisionMapper",
+    "MediaWikiRevisionRepository",
     "MediaWikiRevisionReader",
     "MediaWikiSession",
 ]
