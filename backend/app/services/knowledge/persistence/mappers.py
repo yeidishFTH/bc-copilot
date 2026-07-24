@@ -2,9 +2,16 @@ from __future__ import annotations
 
 import hashlib
 import unicodedata
+from collections.abc import Sequence
 
-from app.db.models import KnowledgeContent, KnowledgePage, KnowledgeRevision
+from app.db.models import (
+    KnowledgeChunk,
+    KnowledgeContent,
+    KnowledgePage,
+    KnowledgeRevision,
+)
 from app.services.knowledge.models import (
+    KnowledgeChunkDraft,
     KnowledgeDocument,
     KnowledgeDocumentRevision,
 )
@@ -109,6 +116,41 @@ class KnowledgePersistenceMapper:
         )
 
         return persistence_revision, persistence_content
+
+    @classmethod
+    def chunks_to_models(
+        cls,
+        chunks: Sequence[KnowledgeChunkDraft],
+        *,
+        revision: KnowledgeRevision,
+    ) -> list[KnowledgeChunk]:
+        """Map ordered chunk drafts to persistence models."""
+
+        persistence_chunks: list[KnowledgeChunk] = []
+
+        for position, chunk in enumerate(chunks):
+            if not isinstance(chunk.content, str) or not chunk.content.strip():
+                raise ValueError("chunk.content cannot be empty")
+
+            if chunk.token_count is not None and chunk.token_count < 0:
+                raise ValueError(
+                    "chunk.token_count cannot be negative"
+                )
+
+            persistence_chunks.append(
+                KnowledgeChunk(
+                    revision=revision,
+                    position=position,
+                    heading_path=list(chunk.heading_path),
+                    content=chunk.content,
+                    token_count=chunk.token_count,
+                    content_sha256=cls.calculate_sha256(
+                        chunk.content
+                    ),
+                )
+            )
+
+        return persistence_chunks
 
     @classmethod
     def validate_document_revision_pair(

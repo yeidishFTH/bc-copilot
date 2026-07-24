@@ -122,3 +122,121 @@ def test_parse_positive_integer_rejects_invalid_values(
             value,  # type: ignore[arg-type]
             field_name="test",
         )
+
+
+def test_chunks_to_models_maps_ordered_chunk_drafts() -> None:
+    from app.services.knowledge import KnowledgeChunkDraft
+
+    page = KnowledgePersistenceMapper.document_to_page(
+        make_document()
+    )
+    revision, _ = KnowledgePersistenceMapper.revision_to_models(
+        make_revision(),
+        page=page,
+    )
+
+    drafts = (
+        KnowledgeChunkDraft(
+            heading_path=(),
+            content="פתיח למסמך",
+            token_count=3,
+        ),
+        KnowledgeChunkDraft(
+            heading_path=("פתיחת סניף", "בדיקות"),
+            content="יש לבדוק את הכספת.",
+            token_count=5,
+        ),
+    )
+
+    chunks = KnowledgePersistenceMapper.chunks_to_models(
+        drafts,
+        revision=revision,
+    )
+
+    assert len(chunks) == 2
+
+    assert chunks[0].revision is revision
+    assert chunks[0].position == 0
+    assert chunks[0].heading_path == []
+    assert chunks[0].content == "פתיח למסמך"
+    assert chunks[0].token_count == 3
+    assert len(chunks[0].content_sha256) == 64
+
+    assert chunks[1].revision is revision
+    assert chunks[1].position == 1
+    assert chunks[1].heading_path == [
+        "פתיחת סניף",
+        "בדיקות",
+    ]
+    assert chunks[1].content == "יש לבדוק את הכספת."
+    assert chunks[1].token_count == 5
+
+
+def test_chunks_to_models_returns_empty_list_for_no_drafts() -> None:
+    page = KnowledgePersistenceMapper.document_to_page(
+        make_document()
+    )
+    revision, _ = KnowledgePersistenceMapper.revision_to_models(
+        make_revision(),
+        page=page,
+    )
+
+    chunks = KnowledgePersistenceMapper.chunks_to_models(
+        (),
+        revision=revision,
+    )
+
+    assert chunks == []
+
+
+def test_chunks_to_models_rejects_empty_content() -> None:
+    from app.services.knowledge import KnowledgeChunkDraft
+
+    page = KnowledgePersistenceMapper.document_to_page(
+        make_document()
+    )
+    revision, _ = KnowledgePersistenceMapper.revision_to_models(
+        make_revision(),
+        page=page,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="chunk.content cannot be empty",
+    ):
+        KnowledgePersistenceMapper.chunks_to_models(
+            (
+                KnowledgeChunkDraft(
+                    heading_path=("בדיקה",),
+                    content="   ",
+                ),
+            ),
+            revision=revision,
+        )
+
+
+def test_chunks_to_models_rejects_negative_token_count() -> None:
+    from app.services.knowledge import KnowledgeChunkDraft
+
+    page = KnowledgePersistenceMapper.document_to_page(
+        make_document()
+    )
+    revision, _ = KnowledgePersistenceMapper.revision_to_models(
+        make_revision(),
+        page=page,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="chunk.token_count cannot be negative",
+    ):
+        KnowledgePersistenceMapper.chunks_to_models(
+            (
+                KnowledgeChunkDraft(
+                    heading_path=(),
+                    content="תוכן",
+                    token_count=-1,
+                ),
+            ),
+            revision=revision,
+        )
