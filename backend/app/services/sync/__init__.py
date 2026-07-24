@@ -9,13 +9,27 @@ from app.services.sync.models import (
     SyncCounters,
     SyncExecutionResult,
 )
+from app.services.sync.pipeline import (
+    FetchRevisionStep,
+    PersistDocumentStep,
+    SyncPageState,
+    SyncPipeline,
+    SyncPipelineStep,
+    build_default_sync_pipeline,
+)
 
 __all__ = [
+    "FetchRevisionStep",
+    "PersistDocumentStep",
     "SyncContext",
     "SyncCounters",
     "SyncEngine",
     "SyncEngineError",
     "SyncExecutionResult",
+    "SyncPageState",
+    "SyncPipeline",
+    "SyncPipelineStep",
     "SyncRunFinishError",
     "SyncRunStartError",
+    "build_default_sync_pipeline",
 ]

@@ -12,11 +12,17 @@ from app.services.sync.models import (
     SyncCounters,
     SyncExecutionResult,
 )
+from app.services.sync.pipeline import (
+    SyncPipeline,
+    build_default_sync_pipeline,
+)
 
 
 class SyncEngine:
     """
     Orchestrate synchronization from a KnowledgeSource into persistence.
+
+    Page-specific processing is delegated to SyncPipeline.
 
     Transaction boundaries:
     - Sync run creation is committed independently.
@@ -25,8 +31,17 @@ class SyncEngine:
     - Final run status is committed independently.
     """
 
-    def __init__(self, context: SyncContext) -> None:
+    def __init__(
+        self,
+        context: SyncContext,
+        *,
+        pipeline: SyncPipeline | None = None,
+    ) -> None:
         self._context = context
+        self._pipeline = pipeline or build_default_sync_pipeline(
+            source=context.source,
+            documents=context.documents,
+        )
 
     async def full_sync(
         self,
@@ -109,16 +124,10 @@ class SyncEngine:
         counters.pages_seen += 1
 
         try:
-            revision_id = self._require_revision_id(document)
+            state = await self._pipeline.run(document)
 
-            revision = await self._context.source.get_revision(
-                revision_id
-            )
-
-            result = await self._context.documents.upsert(
-                document=document,
-                revision=revision,
-            )
+            revision = state.require_revision()
+            result = state.require_upsert_result()
 
             self._increment_success_counter(
                 counters,
@@ -212,19 +221,6 @@ class SyncEngine:
             pages_failed=finished_run.pages_failed,
             error_summary=finished_run.error_summary,
         )
-
-    @staticmethod
-    def _require_revision_id(
-        document: KnowledgeDocument,
-    ) -> str:
-        revision_id = document.latest_revision_id
-
-        if revision_id is None or not revision_id.strip():
-            raise ValueError(
-                "document.latest_revision_id is required for sync"
-            )
-
-        return revision_id
 
     @staticmethod
     def _increment_success_counter(
