@@ -21,6 +21,20 @@ class KnowledgeLink:
 
 
 @dataclass(frozen=True, slots=True)
+class KnowledgeChunkDraft:
+    """
+    A source-neutral chunk prepared for persistence and indexing.
+
+    Persistence-specific fields such as UUID, revision_id, SHA256 and
+    search_vector are deliberately excluded.
+    """
+
+    heading_path: tuple[str, ...]
+    content: str
+    token_count: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class KnowledgeDocumentRevision:
     """An immutable revision retrieved from a knowledge source."""
 
