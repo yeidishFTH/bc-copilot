@@ -13,15 +13,25 @@ from app.services.mediawiki.models import (
 from app.services.mediawiki.repositories import (
     MediaWikiPageRepository,
 )
+from app.services.mediawiki.source import (
+    MediaWikiCategoryReader,
+    MediaWikiKnowledgeSource,
+    MediaWikiPageReader,
+    MediaWikiRevisionReader,
+)
 
 __all__ = [
     "MediaWikiAPI",
     "MediaWikiAPIError",
     "MediaWikiAuthenticator",
+    "MediaWikiCategoryReader",
     "MediaWikiCredentials",
     "MediaWikiError",
+    "MediaWikiKnowledgeSource",
     "MediaWikiMapper",
+    "MediaWikiPageReader",
     "MediaWikiPageRepository",
     "MediaWikiProtocolError",
+    "MediaWikiRevisionReader",
     "MediaWikiSession",
 ]
