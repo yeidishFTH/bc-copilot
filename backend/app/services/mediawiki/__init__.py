@@ -8,6 +8,7 @@ from app.services.mediawiki.exceptions import (
 from app.services.mediawiki.mappers import (
     MediaWikiMapper,
     MediaWikiPageMapper,
+    MediaWikiRevisionMapper,
 )
 from app.services.mediawiki.models import (
     MediaWikiCredentials,
@@ -36,6 +37,7 @@ __all__ = [
     "MediaWikiPageReader",
     "MediaWikiPageRepository",
     "MediaWikiProtocolError",
+    "MediaWikiRevisionMapper",
     "MediaWikiRevisionReader",
     "MediaWikiSession",
 ]
