@@ -1,0 +1,286 @@
+from __future__ import annotations
+
+from typing import Any
+
+import pytest
+
+from app.services.copilot import CopilotAnswerService
+from app.services.knowledge.retrieval import (
+    KnowledgeContext,
+    KnowledgeContextSource,
+)
+
+
+class FakeContextService:
+    def __init__(
+        self,
+        context: KnowledgeContext,
+    ) -> None:
+        self.context = context
+        self.calls: list[dict[str, Any]] = []
+
+    async def build_context(
+        self,
+        query: str,
+        **kwargs: Any,
+    ) -> KnowledgeContext:
+        self.calls.append(
+            {
+                "query": query,
+                **kwargs,
+            }
+        )
+        return self.context
+
+
+class FakeGenerator:
+    def __init__(
+        self,
+        answer: str = "יש לפעול לפי הנוהל. [SOURCE 1]",
+    ) -> None:
+        self.answer = answer
+        self.calls: list[dict[str, str]] = []
+
+    async def generate(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+    ) -> str:
+        self.calls.append(
+            {
+                "system_prompt": system_prompt,
+                "user_prompt": user_prompt,
+            }
+        )
+        return self.answer
+
+
+def make_context() -> KnowledgeContext:
+    source = KnowledgeContextSource(
+        index=1,
+        page_id="page-1",
+        revision_id="revision-1",
+        chunk_id="chunk-1",
+        title="נוהל מחיקת כרטיס לקוח",
+        heading_path=(
+            "נוהל מחיקת כרטיס לקוח",
+            "שלבי ביצוע",
+        ),
+        canonical_url=(
+            "https://wiki.example.test/customer-deletion"
+        ),
+        content=(
+            "קבלת הבקשה חייבת להתבצע מכתובת "
+            "האימייל הרשומה."
+        ),
+        rank=4.7,
+    )
+
+    text = """
+[SOURCE 1]
+כותרת: נוהל מחיקת כרטיס לקוח
+סעיף: שלבי ביצוע
+תוכן:
+קבלת הבקשה חייבת להתבצע מכתובת האימייל הרשומה.
+""".strip()
+
+    return KnowledgeContext(
+        query="איך מוחקים כרטיס לקוח?",
+        text=text,
+        sources=(source,),
+        character_count=len(text),
+        estimated_tokens=40,
+        truncated=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_answer_generates_grounded_response() -> None:
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    result = await service.answer(
+        "  איך   מוחקים כרטיס לקוח?  ",
+        namespace_ids=[0],
+    )
+
+    assert result.question == "איך מוחקים כרטיס לקוח?"
+    assert result.answer == (
+        "יש לפעול לפי הנוהל. [SOURCE 1]"
+    )
+    assert result.grounded is True
+    assert len(result.sources) == 1
+    assert result.sources[0].title == (
+        "נוהל מחיקת כרטיס לקוח"
+    )
+    assert len(generator.calls) == 1
+    assert "[SOURCE 1]" in (
+        generator.calls[0]["user_prompt"]
+    )
+    assert "איך מוחקים כרטיס לקוח?" in (
+        generator.calls[0]["user_prompt"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_answer_does_not_call_model_without_context() -> None:
+    empty_context = KnowledgeContext(
+        query="מידע לא קיים",
+        text="",
+        sources=(),
+        character_count=0,
+        estimated_tokens=0,
+        truncated=False,
+    )
+    context_service = FakeContextService(empty_context)
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    result = await service.answer("מידע לא קיים")
+
+    assert result.grounded is False
+    assert result.sources == ()
+    assert result.answer == service.NO_CONTEXT_ANSWER
+    assert generator.calls == []
+
+
+@pytest.mark.asyncio
+async def test_answer_preserves_context_metadata() -> None:
+    context = make_context()
+    context_service = FakeContextService(context)
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    result = await service.answer("מחיקת כרטיס")
+
+    assert (
+        result.context_character_count
+        == context.character_count
+    )
+    assert (
+        result.context_estimated_tokens
+        == context.estimated_tokens
+    )
+    assert result.context_truncated is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "question",
+    [
+        "",
+        "   ",
+        "\n\t",
+    ],
+)
+async def test_answer_rejects_empty_question(
+    question: str,
+) -> None:
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="question cannot be empty",
+    ):
+        await service.answer(question)
+
+    assert context_service.calls == []
+    assert generator.calls == []
+
+
+@pytest.mark.asyncio
+async def test_answer_rejects_overlong_question() -> None:
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="cannot exceed 2000",
+    ):
+        await service.answer("א" * 2_001)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "generated_answer",
+    [
+        "",
+        "   ",
+        "\n\t",
+    ],
+)
+async def test_answer_rejects_empty_model_output(
+    generated_answer: str,
+) -> None:
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator(generated_answer)
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="empty answer",
+    ):
+        await service.answer("מחיקת כרטיס")
+
+
+@pytest.mark.asyncio
+async def test_answer_rejects_missing_model_citation() -> None:
+    from app.services.copilot import CitationValidationError
+
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator(
+        "יש לפעול לפי הנוהל ללא ציטוט."
+    )
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    with pytest.raises(
+        CitationValidationError,
+        match="does not cite",
+    ):
+        await service.answer("מחיקת כרטיס")
+
+
+@pytest.mark.asyncio
+async def test_answer_rejects_unknown_model_citation() -> None:
+    from app.services.copilot import CitationValidationError
+
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator(
+        "יש לפעול לפי הנוהל. [SOURCE 99]"
+    )
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    with pytest.raises(
+        CitationValidationError,
+        match="unavailable source indexes: 99",
+    ):
+        await service.answer("מחיקת כרטיס")
