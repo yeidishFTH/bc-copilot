@@ -6,6 +6,7 @@ from app.services.knowledge.exceptions import (
     KnowledgeSourceError,
 )
 from app.services.knowledge.models import (
+    KnowledgeSearchResult,
     KnowledgeCategory,
     KnowledgeChunkDraft,
     KnowledgeDocument,
@@ -13,8 +14,15 @@ from app.services.knowledge.models import (
     KnowledgeLink,
 )
 from app.services.knowledge.protocol import KnowledgeSource
+from app.services.knowledge.retrieval import (
+    KnowledgeRetrievalService,
+    KnowledgeSearchReader,
+)
 
 __all__ = [
+    "KnowledgeSearchReader",
+    "KnowledgeRetrievalService",
+    "KnowledgeSearchResult",
     "KnowledgeAuthenticationError",
     "KnowledgeCategory",
     "KnowledgeChunkDraft",

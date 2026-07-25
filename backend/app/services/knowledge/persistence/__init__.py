@@ -3,6 +3,7 @@ from app.services.knowledge.persistence.mappers import (
 )
 from app.services.knowledge.persistence.repositories import (
     KnowledgeDocumentRepository,
+    KnowledgeSearchRepository,
     SyncRepository,
 )
 from app.services.knowledge.persistence.results import (
@@ -15,5 +16,6 @@ __all__ = [
     "DocumentUpsertStatus",
     "KnowledgeDocumentRepository",
     "KnowledgePersistenceMapper",
+    "KnowledgeSearchRepository",
     "SyncRepository",
 ]

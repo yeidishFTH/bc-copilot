@@ -34,6 +34,26 @@ class KnowledgeChunkDraft:
     token_count: int | None = None
 
 
+
+@dataclass(frozen=True, slots=True)
+class KnowledgeSearchResult:
+    """One ranked knowledge chunk returned by retrieval."""
+
+    page_id: str
+    revision_id: str
+    chunk_id: str
+    wiki_page_id: int
+    wiki_revision_id: int
+    title: str
+    canonical_url: str
+    namespace_id: int
+    position: int
+    heading_path: tuple[str, ...]
+    content: str
+    token_count: int | None
+    rank: float
+
+
 @dataclass(frozen=True, slots=True)
 class KnowledgeDocumentRevision:
     """An immutable revision retrieved from a knowledge source."""
