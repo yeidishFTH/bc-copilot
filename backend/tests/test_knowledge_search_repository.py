@@ -236,3 +236,35 @@ async def test_search_statement_boosts_matching_page_title() -> None:
     assert "knowledge_pages.normalized_title LIKE" in compiled_sql
     assert "מחיקת כרטיס לקוח" in parameter_values
     assert 2.0 in parameter_values
+
+
+async def test_natural_language_query_builds_broad_hebrew_search() -> None:
+    expression = (
+        KnowledgeSearchRepository
+        ._build_broad_search_expression(
+            "מה צריך לעשות כשלקוח מבקש למחוק את הכרטיס שלו?"
+        )
+    )
+
+    terms = expression.split(" OR ")
+
+    assert "לקוח" in terms
+    assert "כרטיס" in terms
+    assert "מה" not in terms
+    assert "צריך" not in terms
+    assert "שלו" not in terms
+
+
+async def test_hebrew_prefix_expansion_preserves_original_and_base_word() -> None:
+    assert (
+        KnowledgeSearchRepository._expand_hebrew_token(
+            "הכרטיס"
+        )
+        == ("הכרטיס", "כרטיס")
+    )
+
+    assert "לקוח" in (
+        KnowledgeSearchRepository._expand_hebrew_token(
+            "כשלקוח"
+        )
+    )

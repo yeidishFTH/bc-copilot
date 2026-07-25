@@ -15,11 +15,21 @@ from app.services.knowledge.models import (
 )
 from app.services.knowledge.protocol import KnowledgeSource
 from app.services.knowledge.retrieval import (
+    KnowledgeContext,
+    KnowledgeContextBuilder,
+    KnowledgeContextService,
+    KnowledgeContextSource,
     KnowledgeRetrievalService,
+    KnowledgeRetriever,
     KnowledgeSearchReader,
 )
 
 __all__ = [
+    "KnowledgeContext",
+    "KnowledgeContextBuilder",
+    "KnowledgeContextService",
+    "KnowledgeContextSource",
+    "KnowledgeRetriever",
     "KnowledgeSearchReader",
     "KnowledgeRetrievalService",
     "KnowledgeSearchResult",
