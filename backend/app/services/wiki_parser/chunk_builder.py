@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.services.knowledge.models import KnowledgeChunkDraft
 from app.services.wiki_parser.ast import DocumentNode, SectionNode
+from app.services.wiki_parser.cleaner import clean_wikitext_block
 
 
 class KnowledgeChunkBuilder:
@@ -18,7 +19,7 @@ class KnowledgeChunkBuilder:
     ) -> tuple[KnowledgeChunkDraft, ...]:
         chunks: list[KnowledgeChunkDraft] = []
 
-        lead = document.lead.strip()
+        lead = clean_wikitext_block(document.lead)
 
         if lead:
             chunks.append(
@@ -45,7 +46,7 @@ class KnowledgeChunkBuilder:
         chunks: list[KnowledgeChunkDraft],
     ) -> None:
         heading_path = (*parent_path, section.title)
-        content = section.body.strip()
+        content = clean_wikitext_block(section.body)
 
         if content:
             chunks.append(

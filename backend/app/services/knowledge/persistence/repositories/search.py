@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from sqlalchemy import Select, desc, func, select
+from sqlalchemy import Select, case, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import (
@@ -39,9 +39,22 @@ class KnowledgeSearchRepository:
             "simple",
             normalized_query,
         )
-        rank = func.ts_rank_cd(
+        content_rank = func.ts_rank_cd(
             KnowledgeChunk.search_vector,
             search_query,
+        )
+        title_boost = case(
+            (
+                KnowledgePage.normalized_title.contains(
+                    normalized_query.casefold()
+                ),
+                2.0,
+            ),
+            else_=0.0,
+        )
+        rank = (
+            content_rank
+            + title_boost
         ).label("rank")
 
         statement = (
@@ -122,9 +135,22 @@ class KnowledgeSearchRepository:
             "simple",
             normalized_query,
         )
-        rank = func.ts_rank_cd(
+        content_rank = func.ts_rank_cd(
             KnowledgeChunk.search_vector,
             search_query,
+        )
+        title_boost = case(
+            (
+                KnowledgePage.normalized_title.contains(
+                    normalized_query.casefold()
+                ),
+                2.0,
+            ),
+            else_=0.0,
+        )
+        rank = (
+            content_rank
+            + title_boost
         ).label("rank")
 
         statement = (

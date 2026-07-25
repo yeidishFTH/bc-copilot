@@ -216,3 +216,23 @@ async def test_search_chunks_rejects_invalid_namespaces(
         )
 
     assert session.executed == []
+
+
+async def test_search_statement_boosts_matching_page_title() -> None:
+    statement = KnowledgeSearchRepository.build_search_statement(
+        "מחיקת כרטיס לקוח",
+        limit=5,
+    )
+
+    compiled_statement = statement.compile(
+        dialect=postgresql.dialect(),
+    )
+    compiled_sql = str(compiled_statement)
+    parameter_values = list(
+        compiled_statement.params.values()
+    )
+
+    assert "CASE WHEN" in compiled_sql
+    assert "knowledge_pages.normalized_title LIKE" in compiled_sql
+    assert "מחיקת כרטיס לקוח" in parameter_values
+    assert 2.0 in parameter_values
