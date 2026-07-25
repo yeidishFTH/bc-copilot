@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+from fastapi.testclient import TestClient
+
+from app.api.dependencies import (
+    get_copilot_answer_service,
+)
+from app.main import app
+from app.services.copilot import (
+    CopilotAnswer,
+    CopilotSource,
+)
+
+
+class FakeCopilotService:
+    async def answer(
+        self,
+        question: str,
+        **_: object,
+    ) -> CopilotAnswer:
+        return CopilotAnswer(
+            question=question,
+            answer=(
+                "יש לקבל את הבקשה מהמייל "
+                "הרשום. [SOURCE 1]"
+            ),
+            grounded=True,
+            sources=(
+                CopilotSource(
+                    index=1,
+                    title=(
+                        "נוהל מחיקת "
+                        "כרטיס לקוח"
+                    ),
+                    heading_path=(
+                        "שלבי ביצוע",
+                    ),
+                    canonical_url=(
+                        "https://wiki.example.test/"
+                        "delete-customer"
+                    ),
+                    chunk_id="chunk-1",
+                    rank=4.7,
+                ),
+            ),
+            context_character_count=800,
+            context_estimated_tokens=200,
+            context_truncated=False,
+        )
+
+
+def test_copilot_ask_returns_grounded_answer() -> None:
+    app.dependency_overrides[
+        get_copilot_answer_service
+    ] = lambda: FakeCopilotService()
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/copilot/ask",
+                json={
+                    "question": (
+                        "איך מוחקים כרטיס לקוח?"
+                    )
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert payload["grounded"] is True
+    assert "[SOURCE 1]" in payload["answer"]
+    assert len(payload["sources"]) == 1
+    assert payload["sources"][0]["title"] == (
+        "נוהל מחיקת כרטיס לקוח"
+    )
+
+
+def test_copilot_ask_validates_question() -> None:
+    app.dependency_overrides[
+        get_copilot_answer_service
+    ] = lambda: FakeCopilotService()
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/copilot/ask",
+                json={
+                    "question": "",
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
+
+
+def test_copilot_route_exists_in_openapi() -> None:
+    schema = app.openapi()
+
+    assert "/api/copilot/ask" in schema["paths"]
+    assert (
+        "post"
+        in schema["paths"]["/api/copilot/ask"]
+    )

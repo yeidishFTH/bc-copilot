@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     mediawiki_bot_username: str | None = None
     mediawiki_bot_password: SecretStr | None = None
 
+    openai_api_key: SecretStr | None = None
+    openai_model: str = "gpt-5.6"
+    openai_timeout_seconds: float = 60.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

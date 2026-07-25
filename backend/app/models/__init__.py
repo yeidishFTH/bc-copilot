@@ -1,3 +1,8 @@
+from app.models.copilot import (
+    CopilotAskRequest,
+    CopilotAskResponse,
+    CopilotSourceResponse,
+)
 from app.models.health import (
     DatabaseHealthResponse,
     HealthResponse,
@@ -9,6 +14,9 @@ from app.models.knowledge import (
 )
 
 __all__ = [
+    "CopilotSourceResponse",
+    "CopilotAskResponse",
+    "CopilotAskRequest",
     "DatabaseHealthResponse",
     "HealthResponse",
     "KnowledgeSearchItem",
