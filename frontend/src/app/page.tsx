@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, FormEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type CopilotSource = {
   index: number;
@@ -83,86 +85,151 @@ function AnswerWithCitations({
 }) {
   const sourceMap = useMemo(
     () => new Map(
-      sources.map((source) => [source.index, source]),
+      sources.map((source) => [
+        source.index,
+        source,
+      ]),
     ),
     [sources],
   );
 
-  const parts = answer.split(
-    /(\[SOURCE\s+\d+\])/gi,
+  const sourceByChunkId = useMemo(
+    () => new Map(
+      sources.map((source) => [
+        source.chunk_id,
+        source,
+      ]),
+    ),
+    [sources],
   );
 
-  return (
-    <div className="answer-content">
-      {parts.map((part, index) => {
-        const match = part.match(
-          /^\[SOURCE\s+(\d+)\]$/i,
+  const markdownAnswer = useMemo(
+    () => answer.replace(
+      /\[SOURCE\s+(\d+)\]/gi,
+      (
+        _match,
+        rawSourceIndex: string,
+      ) => {
+        const sourceIndex = Number(
+          rawSourceIndex,
+        );
+        const source = sourceMap.get(
+          sourceIndex,
         );
 
-        if (!match) {
-          return (
-            <span key={`${index}-${part.slice(0, 10)}`}>
-              {part}
-            </span>
-          );
-        }
-
-        const sourceIndex = Number(match[1]);
-        const source = sourceMap.get(sourceIndex);
-
         if (!source) {
-          return (
-            <span
-              className="citation citation-invalid"
-              key={`${index}-${sourceIndex}`}
-            >
-              {sourceIndex}
-            </span>
-          );
+          return `מקור ${sourceIndex}`;
         }
 
         return (
-          <button
-            type="button"
-            className="citation"
-            title={`${source.title} — ${getHeading(source)}`}
-            aria-label={`פתיחת מקור ${sourceIndex}: ${source.title}`}
-            key={`${index}-${sourceIndex}`}
-            onClick={() => {
-              dispatchSourceInspectorEvent(
-                "copilot:source-open",
-                source.chunk_id,
-              );
-            }}
-            onMouseEnter={() => {
-              dispatchSourceInspectorEvent(
-                "copilot:source-highlight",
-                source.chunk_id,
-              );
-            }}
-            onMouseLeave={() => {
-              dispatchSourceInspectorEvent(
-                "copilot:source-highlight",
-                "",
-              );
-            }}
-            onFocus={() => {
-              dispatchSourceInspectorEvent(
-                "copilot:source-highlight",
-                source.chunk_id,
-              );
-            }}
-            onBlur={() => {
-              dispatchSourceInspectorEvent(
-                "copilot:source-highlight",
-                "",
-              );
-            }}
-          >
-            {sourceIndex}
-          </button>
+          `[${sourceIndex}]`
+          + `(#source-${source.chunk_id})`
         );
-      })}
+      },
+    ),
+    [answer, sourceMap],
+  );
+
+  return (
+    <div className="answer-content markdown-answer">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a({
+            href,
+            children,
+            ...linkProps
+          }) {
+            if (
+              href
+              && href.startsWith("#source-")
+            ) {
+              const chunkId = href.slice(
+                "#source-".length,
+              );
+              const source = (
+                sourceByChunkId.get(chunkId)
+              );
+
+              if (!source) {
+                return (
+                  <span className="citation citation-invalid">
+                    {children}
+                  </span>
+                );
+              }
+
+              return (
+                <button
+                  type="button"
+                  className="citation"
+                  title={
+                    `${source.title} — ${
+                      getHeading(source)
+                    }`
+                  }
+                  aria-label={
+                    `פתיחת מקור ${source.index}: `
+                    + source.title
+                  }
+                  onClick={() => {
+                    dispatchSourceInspectorEvent(
+                      "copilot:source-open",
+                      source.chunk_id,
+                    );
+                  }}
+                  onMouseEnter={() => {
+                    dispatchSourceInspectorEvent(
+                      "copilot:source-highlight",
+                      source.chunk_id,
+                    );
+                  }}
+                  onMouseLeave={() => {
+                    dispatchSourceInspectorEvent(
+                      "copilot:source-highlight",
+                      "",
+                    );
+                  }}
+                  onFocus={() => {
+                    dispatchSourceInspectorEvent(
+                      "copilot:source-highlight",
+                      source.chunk_id,
+                    );
+                  }}
+                  onBlur={() => {
+                    dispatchSourceInspectorEvent(
+                      "copilot:source-highlight",
+                      "",
+                    );
+                  }}
+                >
+                  {children}
+                </button>
+              );
+            }
+
+            return (
+              <a
+                {...linkProps}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {children}
+              </a>
+            );
+          },
+          table({ children }) {
+            return (
+              <div className="markdown-table-scroll">
+                <table>{children}</table>
+              </div>
+            );
+          },
+        }}
+      >
+        {markdownAnswer}
+      </ReactMarkdown>
     </div>
   );
 }

@@ -1813,3 +1813,253 @@ a {
 }
 
 /* REFERENCE INSPECTOR END */
+
+/* MARKDOWN ANSWER START */
+
+.markdown-answer {
+  white-space: normal;
+}
+
+.markdown-answer > :first-child {
+  margin-top: 0;
+}
+
+.markdown-answer > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-answer p {
+  margin: 0 0 15px;
+}
+
+.markdown-answer h1,
+.markdown-answer h2,
+.markdown-answer h3,
+.markdown-answer h4 {
+  margin: 26px 0 12px;
+  color: var(--text);
+  font-weight: 850;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+.markdown-answer h1 {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 24px;
+}
+
+.markdown-answer h2 {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(25, 25, 22, 0.07);
+  font-size: 20px;
+}
+
+.markdown-answer h3 {
+  font-size: 17px;
+}
+
+.markdown-answer h4 {
+  font-size: 15px;
+}
+
+.markdown-answer strong {
+  color: #1e1e1c;
+  font-weight: 850;
+}
+
+.markdown-answer em {
+  color: #4d4d48;
+}
+
+.markdown-answer ul,
+.markdown-answer ol {
+  margin: 12px 0 18px;
+  padding-right: 25px;
+  padding-left: 0;
+}
+
+.markdown-answer li {
+  margin: 7px 0;
+  padding-right: 4px;
+}
+
+.markdown-answer li::marker {
+  color: #a47f00;
+  font-weight: 800;
+}
+
+.markdown-answer li > p {
+  margin: 0;
+}
+
+.markdown-answer ul.contains-task-list {
+  padding-right: 4px;
+  list-style: none;
+}
+
+.markdown-answer .task-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.markdown-answer .task-list-item input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  margin-top: 7px;
+  accent-color: var(--yellow-dark);
+}
+
+.markdown-answer blockquote {
+  margin: 18px 0;
+  padding: 13px 16px;
+  border-right: 4px solid var(--yellow);
+  border-radius: 10px 0 0 10px;
+  background: rgba(245, 197, 24, 0.075);
+  color: #4d493b;
+}
+
+.markdown-answer blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-answer code {
+  direction: ltr;
+  padding: 2px 6px;
+  border: 1px solid rgba(25, 25, 22, 0.08);
+  border-radius: 6px;
+  background: #f3f3f0;
+  color: #353531;
+  font-family:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+  font-size: 0.88em;
+  unicode-bidi: isolate;
+}
+
+.markdown-answer pre {
+  direction: ltr;
+  overflow-x: auto;
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid rgba(25, 25, 22, 0.1);
+  border-radius: 13px;
+  background: #1f1f1d;
+  color: #f7f7f3;
+  text-align: left;
+  unicode-bidi: isolate;
+}
+
+.markdown-answer pre code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.markdown-answer hr {
+  margin: 24px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.markdown-answer a:not(.citation) {
+  color: #806500;
+  font-weight: 700;
+  text-decoration-color: rgba(128, 101, 0, 0.34);
+  text-underline-offset: 3px;
+}
+
+.markdown-answer a:not(.citation):hover {
+  color: #5e4a00;
+  text-decoration-color: currentColor;
+}
+
+.markdown-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 18px 0;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+
+.markdown-answer table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  background: white;
+  font-size: 13px;
+}
+
+.markdown-answer th,
+.markdown-answer td {
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  text-align: right;
+  vertical-align: top;
+}
+
+.markdown-answer th:last-child,
+.markdown-answer td:last-child {
+  border-left: 0;
+}
+
+.markdown-answer tr:last-child td {
+  border-bottom: 0;
+}
+
+.markdown-answer th {
+  background: #faf8ee;
+  color: #493d10;
+  font-weight: 850;
+}
+
+.markdown-answer tbody tr:hover {
+  background: #fffdf5;
+}
+
+.markdown-answer del {
+  color: var(--text-muted);
+}
+
+.markdown-answer .citation {
+  vertical-align: 0.08em;
+}
+
+@media (max-width: 720px) {
+  .markdown-answer h1 {
+    font-size: 21px;
+  }
+
+  .markdown-answer h2 {
+    font-size: 18px;
+  }
+
+  .markdown-answer h3 {
+    font-size: 16px;
+  }
+
+  .markdown-answer ul,
+  .markdown-answer ol {
+    padding-right: 21px;
+  }
+
+  .markdown-answer blockquote {
+    padding: 11px 13px;
+  }
+
+  .markdown-answer pre {
+    margin-inline: -4px;
+    padding: 13px;
+    border-radius: 11px;
+  }
+}
+
+/* MARKDOWN ANSWER END */
