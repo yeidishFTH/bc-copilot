@@ -1594,3 +1594,222 @@ a {
 }
 
 /* COLLAPSIBLE SOURCES END */
+
+/* REFERENCE INSPECTOR START */
+
+.reference-inspector-list {
+  display: grid;
+  gap: 8px;
+}
+
+.reference-inspector-card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.reference-inspector-card:hover {
+  border-color: rgba(183, 143, 0, 0.28);
+}
+
+.reference-source-summary {
+  display: grid;
+  width: 100%;
+  grid-template-columns:
+    auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px 13px 19px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: right;
+  cursor: pointer;
+}
+
+.reference-source-details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.reference-source-details strong {
+  overflow: hidden;
+  max-width: 100%;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reference-source-details .source-heading-path {
+  display: block;
+  max-width: 100%;
+  margin-top: 3px;
+}
+
+.reference-source-status {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.source-relevance-label {
+  padding: 5px 8px;
+  border: 1px solid rgba(183, 143, 0, 0.16);
+  border-radius: 999px;
+  background: rgba(245, 197, 24, 0.09);
+  color: #715900;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.reference-source-chevron {
+  display: inline-block;
+  color: var(--text-muted);
+  font-size: 16px;
+  transition: transform 180ms ease;
+}
+
+.reference-source-chevron-open {
+  transform: rotate(180deg);
+}
+
+.source-card-collapsed {
+  min-height: 64px;
+}
+
+.source-card-expanded {
+  border-color: rgba(183, 143, 0, 0.32);
+  background: #fffefa;
+  box-shadow:
+    0 9px 28px rgba(20, 20, 17, 0.08);
+}
+
+.reference-source-body {
+  padding: 0 18px 15px 19px;
+  border-top: 1px solid rgba(25, 25, 22, 0.065);
+  animation: reference-source-open 180ms ease;
+}
+
+.reference-source-body .source-original-content {
+  margin-top: 14px;
+}
+
+.reference-source-body .source-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.reference-source-empty {
+  margin: 14px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.source-card-highlighted {
+  border-color: #cfa200;
+  box-shadow:
+    0 0 0 4px rgba(245, 197, 24, 0.2),
+    0 13px 34px rgba(20, 20, 17, 0.11);
+  animation: reference-source-highlight 900ms ease;
+}
+
+@keyframes reference-source-open {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reference-source-highlight {
+  0% {
+    transform: scale(1);
+  }
+
+  30% {
+    transform: scale(1.009);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.citation {
+  appearance: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.citation:hover,
+.citation:focus-visible {
+  border-color: #c99e00;
+  background: #fff0a2;
+  box-shadow:
+    0 4px 14px rgba(117, 91, 0, 0.16);
+}
+
+@media (max-width: 720px) {
+  .reference-source-summary {
+    grid-template-columns:
+      auto minmax(0, 1fr) auto;
+    gap: 9px;
+    padding: 12px 12px 12px 15px;
+  }
+
+  .reference-source-details strong {
+    font-size: 13px;
+  }
+
+  .source-relevance-label {
+    display: none;
+  }
+
+  .reference-source-body {
+    padding-inline: 13px;
+  }
+
+  .reference-source-body .source-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .reference-source-body .source-icon-button,
+  .reference-source-body .source-wiki-link {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reference-inspector-card,
+  .reference-source-chevron {
+    transition: none;
+  }
+
+  .reference-source-body,
+  .source-card-highlighted {
+    animation: none;
+  }
+}
+
+/* REFERENCE INSPECTOR END */

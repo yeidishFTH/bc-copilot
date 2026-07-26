@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  FormEvent,
-  KeyboardEvent,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, FormEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
 
 type CopilotSource = {
   index: number;
@@ -58,6 +52,28 @@ function getHeading(source: CopilotSource): string {
   return source.heading_path.join(" › ");
 }
 
+type SourceInspectorEventDetail = {
+  chunkId: string;
+};
+
+
+function dispatchSourceInspectorEvent(
+  eventName: string,
+  chunkId: string,
+): void {
+  window.dispatchEvent(
+    new CustomEvent<SourceInspectorEventDetail>(
+      eventName,
+      {
+        detail: {
+          chunkId,
+        },
+      },
+    ),
+  );
+}
+
+
 function AnswerWithCitations({
   answer,
   sources,
@@ -72,7 +88,9 @@ function AnswerWithCitations({
     [sources],
   );
 
-  const parts = answer.split(/(\[SOURCE\s+\d+\])/gi);
+  const parts = answer.split(
+    /(\[SOURCE\s+\d+\])/gi,
+  );
 
   return (
     <div className="answer-content">
@@ -98,25 +116,57 @@ function AnswerWithCitations({
               className="citation citation-invalid"
               key={`${index}-${sourceIndex}`}
             >
-              מקור {sourceIndex}
+              {sourceIndex}
             </span>
           );
         }
 
         return (
-          <a
+          <button
+            type="button"
             className="citation"
-            href={`#source-${source.chunk_id}`}
             title={`${source.title} — ${getHeading(source)}`}
+            aria-label={`פתיחת מקור ${sourceIndex}: ${source.title}`}
             key={`${index}-${sourceIndex}`}
+            onClick={() => {
+              dispatchSourceInspectorEvent(
+                "copilot:source-open",
+                source.chunk_id,
+              );
+            }}
+            onMouseEnter={() => {
+              dispatchSourceInspectorEvent(
+                "copilot:source-highlight",
+                source.chunk_id,
+              );
+            }}
+            onMouseLeave={() => {
+              dispatchSourceInspectorEvent(
+                "copilot:source-highlight",
+                "",
+              );
+            }}
+            onFocus={() => {
+              dispatchSourceInspectorEvent(
+                "copilot:source-highlight",
+                source.chunk_id,
+              );
+            }}
+            onBlur={() => {
+              dispatchSourceInspectorEvent(
+                "copilot:source-highlight",
+                "",
+              );
+            }}
           >
             {sourceIndex}
-          </a>
+          </button>
         );
       })}
     </div>
   );
 }
+
 
 function SourcesPanel({
   sources,
@@ -124,6 +174,92 @@ function SourcesPanel({
   sources: CopilotSource[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeChunkId, setActiveChunkId] = useState<
+    string | null
+  >(null);
+  const [
+    highlightedChunkId,
+    setHighlightedChunkId,
+  ] = useState<string | null>(null);
+
+  useEffect(() => {
+    function openSource(
+      event: Event,
+    ): void {
+      const customEvent = (
+        event as CustomEvent<SourceInspectorEventDetail>
+      );
+
+      const chunkId = customEvent.detail?.chunkId;
+
+      if (!chunkId) {
+        return;
+      }
+
+      const sourceExists = sources.some(
+        (source) => source.chunk_id === chunkId,
+      );
+
+      if (!sourceExists) {
+        return;
+      }
+
+      setIsOpen(true);
+      setActiveChunkId(chunkId);
+      setHighlightedChunkId(chunkId);
+
+      window.setTimeout(() => {
+        document
+          .getElementById(`source-${chunkId}`)
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+      }, 80);
+
+      window.setTimeout(() => {
+        setHighlightedChunkId((current) => (
+          current === chunkId
+            ? null
+            : current
+        ));
+      }, 1800);
+    }
+
+    function highlightSource(
+      event: Event,
+    ): void {
+      const customEvent = (
+        event as CustomEvent<SourceInspectorEventDetail>
+      );
+
+      setHighlightedChunkId(
+        customEvent.detail?.chunkId || null,
+      );
+    }
+
+    window.addEventListener(
+      "copilot:source-open",
+      openSource,
+    );
+
+    window.addEventListener(
+      "copilot:source-highlight",
+      highlightSource,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "copilot:source-open",
+        openSource,
+      );
+
+      window.removeEventListener(
+        "copilot:source-highlight",
+        highlightSource,
+      );
+    };
+  }, [sources]);
 
   if (sources.length === 0) {
     return null;
@@ -134,6 +270,7 @@ function SourcesPanel({
       className={[
         "sources-section",
         "sources-collapsible",
+        "reference-inspector",
         isOpen ? "sources-collapsible-open" : "",
       ].filter(Boolean).join(" ")}
     >
@@ -158,7 +295,7 @@ function SourcesPanel({
             <span>
               {sources.length}
               {" "}
-              מקורות נמצאו
+              מקורות תומכים בתשובה
             </span>
           </span>
         </span>
@@ -186,10 +323,24 @@ function SourcesPanel({
         className="sources-collapse-region"
         hidden={!isOpen}
       >
-        <div className="sources-grid">
+        <div className="reference-inspector-list">
           {sources.map((source) => (
             <SourceCard
               source={source}
+              isExpanded={
+                activeChunkId === source.chunk_id
+              }
+              isHighlighted={
+                highlightedChunkId
+                === source.chunk_id
+              }
+              onToggle={() => {
+                setActiveChunkId((current) => (
+                  current === source.chunk_id
+                    ? null
+                    : source.chunk_id
+                ));
+              }}
               key={source.chunk_id}
             />
           ))}
@@ -200,12 +351,90 @@ function SourcesPanel({
 }
 
 
+function getSourceKind(
+  source: CopilotSource,
+): {
+  label: string;
+  icon: string;
+  tone: string;
+} {
+  const title = source.title.trim();
+
+  if (title.includes("נוהל")) {
+    return {
+      label: "נוהל",
+      icon: "▤",
+      tone: "procedure",
+    };
+  }
+
+  if (
+    title.includes("מדריך")
+    || title.includes("הדרכה")
+  ) {
+    return {
+      label: "מדריך",
+      icon: "◫",
+      tone: "guide",
+    };
+  }
+
+  if (
+    title.includes("צ'קליסט")
+    || title.includes("צ׳קליסט")
+  ) {
+    return {
+      label: "צ׳קליסט",
+      icon: "✓",
+      tone: "checklist",
+    };
+  }
+
+  if (
+    title.includes("פורטל")
+    || title === "Main Page"
+  ) {
+    return {
+      label: "פורטל",
+      icon: "◇",
+      tone: "portal",
+    };
+  }
+
+  return {
+    label: "מסמך ידע",
+    icon: "◧",
+    tone: "knowledge",
+  };
+}
+
+
+function getRelevanceLabel(
+  rank: number,
+): string {
+  if (rank >= 4) {
+    return "רלוונטי מאוד";
+  }
+
+  if (rank >= 2.5) {
+    return "רלוונטי";
+  }
+
+  return "מידע משלים";
+}
+
+
 function SourceCard({
   source,
+  isExpanded,
+  isHighlighted,
+  onToggle,
 }: {
   source: CopilotSource;
+  isExpanded: boolean;
+  isHighlighted: boolean;
+  onToggle: () => void;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [copyLabel, setCopyLabel] = useState(
     "העתקה",
   );
@@ -213,63 +442,8 @@ function SourceCard({
   const sourceContent = source.content?.trim() ?? "";
   const hasContent = sourceContent.length > 0;
   const heading = getHeading(source);
-  const normalizedTitle = source.title.trim();
-
-  const sourceKind = (
-    normalizedTitle.includes("נוהל")
-      ? {
-          label: "נוהל",
-          icon: "▤",
-          tone: "procedure",
-        }
-      : normalizedTitle.includes("מדריך")
-        || normalizedTitle.includes("הדרכה")
-        ? {
-            label: "מדריך",
-            icon: "◫",
-            tone: "guide",
-          }
-        : normalizedTitle.includes("צ'קליסט")
-          || normalizedTitle.includes("צ׳קליסט")
-          ? {
-              label: "צ׳קליסט",
-              icon: "✓",
-              tone: "checklist",
-            }
-          : normalizedTitle.includes("פורטל")
-            || normalizedTitle === "Main Page"
-            ? {
-                label: "פורטל",
-                icon: "◇",
-                tone: "portal",
-              }
-            : {
-                label: "מסמך ידע",
-                icon: "◧",
-                tone: "knowledge",
-              }
-  );
-
-  const relevance = Math.min(
-    99,
-    Math.max(
-      60,
-      Math.round(
-        58
-        + Math.log1p(
-          Math.max(source.rank, 0),
-        ) * 19,
-      ),
-    ),
-  );
-
-  const preview = (
-    hasContent
-      ? sourceContent
-          .replace(/\s+/g, " ")
-          .trim()
-      : heading
-  );
+  const sourceKind = getSourceKind(source);
+  const relevanceLabel = getRelevanceLabel(source.rank);
 
   async function copySource(): Promise<void> {
     if (!hasContent) {
@@ -305,120 +479,89 @@ function SourceCard({
       className={[
         "source-card",
         "source-card-v2",
+        "reference-inspector-card",
         `source-tone-${sourceKind.tone}`,
         isExpanded
           ? "source-card-expanded"
+          : "source-card-collapsed",
+        isHighlighted
+          ? "source-card-highlighted"
           : "",
       ].filter(Boolean).join(" ")}
       id={`source-${source.chunk_id}`}
     >
       <div className="source-card-accent" />
 
-      <div className="source-card-main">
-        <header className="source-card-header">
-          <div
-            className="source-document-icon"
+      <button
+        type="button"
+        className="reference-source-summary"
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+      >
+        <span
+          className="source-document-icon"
+          aria-hidden="true"
+        >
+          {sourceKind.icon}
+        </span>
+
+        <span className="reference-source-details">
+          <span className="source-eyebrow">
+            <span className="source-type-badge">
+              {sourceKind.label}
+            </span>
+
+            <span className="source-number">
+              מקור {source.index}
+            </span>
+          </span>
+
+          <strong>{source.title}</strong>
+
+          <span className="source-heading-path">
+            {heading}
+          </span>
+        </span>
+
+        <span className="reference-source-status">
+          <span className="source-relevance-label">
+            {relevanceLabel}
+          </span>
+
+          <span
+            className={[
+              "reference-source-chevron",
+              isExpanded
+                ? "reference-source-chevron-open"
+                : "",
+            ].filter(Boolean).join(" ")}
             aria-hidden="true"
           >
-            {sourceKind.icon}
-          </div>
+            ▾
+          </span>
+        </span>
+      </button>
 
-          <div className="source-details">
-            <div className="source-eyebrow">
-              <span className="source-type-badge">
-                {sourceKind.label}
-              </span>
+      {isExpanded && (
+        <div className="reference-source-body">
+          {hasContent ? (
+            <div className="source-original-content">
+              <div className="source-original-heading">
+                <span aria-hidden="true">“</span>
+                הקטע המקורי מתוך הוויקי
+              </div>
 
-              <span className="source-number">
-                מקור {source.index}
-              </span>
+              <div className="source-original-text">
+                {sourceContent}
+              </div>
             </div>
-
-            <h4>{source.title}</h4>
-
-            <p className="source-heading-path">
-              {heading}
+          ) : (
+            <p className="reference-source-empty">
+              לא קיים קטע מקורי להצגה.
             </p>
-          </div>
-
-          <div
-            className="source-relevance"
-            title={
-              `ציון דירוג פנימי: ${
-                source.rank.toFixed(3)
-              }`
-            }
-          >
-            <strong>{relevance}%</strong>
-            <span>רלוונטיות</span>
-          </div>
-        </header>
-
-        {!isExpanded && (
-          <p className="source-preview">
-            {preview}
-          </p>
-        )}
-
-        {isExpanded && hasContent && (
-          <div className="source-original-content">
-            <div className="source-original-heading">
-              <span aria-hidden="true">“</span>
-              הקטע המקורי מתוך הוויקי
-            </div>
-
-            <div className="source-original-text">
-              {sourceContent}
-            </div>
-          </div>
-        )}
-
-        <footer className="source-card-footer">
-          <div className="source-relevance-bar">
-            <span
-              style={{
-                width: `${relevance}%`,
-              }}
-            />
-          </div>
+          )}
 
           <div className="source-actions">
-            {hasContent && (
-              <button
-                type="button"
-                className={[
-                  "source-icon-button",
-                  "source-expand-button",
-                ].join(" ")}
-                onClick={() => {
-                  setIsExpanded(
-                    (current) => !current,
-                  );
-                }}
-                aria-expanded={isExpanded}
-                aria-label={
-                  isExpanded
-                    ? "הסתרת הקטע המקורי"
-                    : "הצגת הקטע המקורי"
-                }
-                title={
-                  isExpanded
-                    ? "הסתרת הקטע המקורי"
-                    : "הצגת הקטע המקורי"
-                }
-              >
-                <span aria-hidden="true">
-                  {isExpanded ? "▴" : "▾"}
-                </span>
-
-                <span className="source-action-label">
-                  {isExpanded
-                    ? "סגירה"
-                    : "הצגת קטע"}
-                </span>
-              </button>
-            )}
-
             {hasContent && (
               <button
                 type="button"
@@ -426,14 +569,9 @@ function SourceCard({
                 onClick={() => {
                   void copySource();
                 }}
-                aria-label={copyLabel}
-                title={copyLabel}
               >
                 <span aria-hidden="true">⧉</span>
-
-                <span className="source-action-label">
-                  {copyLabel}
-                </span>
+                {copyLabel}
               </button>
             )}
 
@@ -445,18 +583,13 @@ function SourceCard({
               href={source.canonical_url}
               target="_blank"
               rel="noreferrer"
-              aria-label="פתיחת המסמך בוויקי"
-              title="פתיחת המסמך בוויקי"
             >
               <span aria-hidden="true">↗</span>
-
-              <span className="source-action-label">
-                פתיחה בוויקי
-              </span>
+              פתיחה בוויקי
             </a>
           </div>
-        </footer>
-      </div>
+        </div>
+      )}
     </article>
   );
 }
