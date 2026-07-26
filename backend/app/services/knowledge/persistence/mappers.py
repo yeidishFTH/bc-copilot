@@ -9,12 +9,14 @@ from app.db.models import (
     KnowledgeContent,
     KnowledgePage,
     KnowledgeRevision,
+    KnowledgeRevisionMetadata,
 )
 from app.services.knowledge.models import (
     KnowledgeChunkDraft,
     KnowledgeDocument,
     KnowledgeDocumentRevision,
 )
+from app.services.wiki_parser import WikiMetadataParser
 
 
 class KnowledgePersistenceMapper:
@@ -105,6 +107,26 @@ class KnowledgePersistenceMapper:
             author_name=revision.author_name,
             comment=revision.comment,
             content_sha256=content_sha256,
+        )
+
+        metadata = WikiMetadataParser().parse(
+            revision.raw_content
+        )
+
+        persistence_revision.document_metadata = (
+            KnowledgeRevisionMetadata(
+                status=metadata.status,
+                document_type=metadata.document_type,
+                portal=metadata.portal,
+                category=metadata.category,
+                audience=list(metadata.audience),
+                owner=metadata.owner,
+                responsible_department=(
+                    metadata.responsible_department
+                ),
+                updated_on=metadata.updated_on,
+                version=metadata.version,
+            )
         )
 
         persistence_content = KnowledgeContent(

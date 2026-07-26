@@ -240,3 +240,393 @@ def test_chunks_to_models_rejects_negative_token_count() -> None:
             ),
             revision=revision,
         )
+
+
+def test_revision_to_models_maps_wiki_metadata() -> None:
+    from datetime import UTC, datetime
+
+    from app.db.models import KnowledgePage
+    from app.services.knowledge import (
+        KnowledgeDocumentRevision,
+    )
+    from app.services.knowledge.persistence import (
+        KnowledgePersistenceMapper,
+    )
+
+    page = KnowledgePage(
+        wiki_page_id=10,
+        namespace_id=0,
+        title="נוהל בדיקה",
+        normalized_title="נוהל בדיקה",
+        canonical_url=(
+            "https://wiki.example.test/wiki/test"
+        ),
+        latest_revision_id=20,
+        is_redirect=False,
+        is_active=True,
+    )
+
+    revision = KnowledgeDocumentRevision(
+        id="20",
+        document_id="10",
+        timestamp=datetime.now(UTC),
+        raw_content="""
+{{Metadata
+|סטטוס=מאושר
+|סוג מסמך=נוהל
+|פורטל=ציות ורגולציה
+|קטגוריה=KYC
+|קהל יעד=נציגים, מנהלי סניפים
+|בעלים=מחלקת ציות
+|מחלקה אחראית=ציות
+|עדכון אחרון=26/07/2026
+|גרסה=1.0
+}}
+
+= נוהל בדיקה =
+תוכן
+""",
+    )
+
+    persistence_revision, _ = (
+        KnowledgePersistenceMapper
+        .revision_to_models(
+            revision,
+            page=page,
+        )
+    )
+
+    metadata = (
+        persistence_revision.document_metadata
+    )
+
+    assert metadata is not None
+    assert metadata.status == "מאושר"
+    assert metadata.document_type == "נוהל"
+    assert metadata.portal == "ציות ורגולציה"
+    assert metadata.category == "KYC"
+    assert metadata.audience == [
+        "נציגים",
+        "מנהלי סניפים",
+    ]
+    assert metadata.owner == "מחלקת ציות"
+    assert (
+        metadata.responsible_department
+        == "ציות"
+    )
+    assert metadata.updated_on.isoformat() == (
+        "2026-07-26"
+    )
+    assert metadata.version == "1.0"
+
+
+def test_revision_to_models_maps_wiki_metadata() -> None:
+    from datetime import UTC, datetime
+
+    from app.db.models import KnowledgePage
+    from app.services.knowledge import (
+        KnowledgeDocumentRevision,
+    )
+    from app.services.knowledge.persistence import (
+        KnowledgePersistenceMapper,
+    )
+
+    page = KnowledgePage(
+        wiki_page_id=10,
+        namespace_id=0,
+        title="נוהל בדיקה",
+        normalized_title="נוהל בדיקה",
+        canonical_url=(
+            "https://wiki.example.test/wiki/test"
+        ),
+        latest_revision_id=20,
+        is_redirect=False,
+        is_active=True,
+    )
+
+    revision = KnowledgeDocumentRevision(
+        id="20",
+        document_id="10",
+        timestamp=datetime.now(UTC),
+        raw_content="""
+{{Metadata
+|סטטוס=מאושר
+|סוג מסמך=נוהל
+|פורטל=ציות ורגולציה
+|קטגוריה=KYC
+|קהל יעד=נציגים, מנהלי סניפים
+|בעלים=מחלקת ציות
+|מחלקה אחראית=ציות
+|עדכון אחרון=26/07/2026
+|גרסה=1.0
+}}
+
+= נוהל בדיקה =
+תוכן
+""",
+    )
+
+    persistence_revision, _ = (
+        KnowledgePersistenceMapper
+        .revision_to_models(
+            revision,
+            page=page,
+        )
+    )
+
+    metadata = (
+        persistence_revision.document_metadata
+    )
+
+    assert metadata is not None
+    assert metadata.status == "מאושר"
+    assert metadata.document_type == "נוהל"
+    assert metadata.portal == "ציות ורגולציה"
+    assert metadata.category == "KYC"
+    assert metadata.audience == [
+        "נציגים",
+        "מנהלי סניפים",
+    ]
+    assert metadata.owner == "מחלקת ציות"
+    assert (
+        metadata.responsible_department
+        == "ציות"
+    )
+    assert metadata.updated_on.isoformat() == (
+        "2026-07-26"
+    )
+    assert metadata.version == "1.0"
+
+
+def test_revision_to_models_maps_wiki_metadata() -> None:
+    from datetime import UTC, datetime
+
+    from app.db.models import KnowledgePage
+    from app.services.knowledge import (
+        KnowledgeDocumentRevision,
+    )
+    from app.services.knowledge.persistence import (
+        KnowledgePersistenceMapper,
+    )
+
+    page = KnowledgePage(
+        wiki_page_id=10,
+        namespace_id=0,
+        title="נוהל בדיקה",
+        normalized_title="נוהל בדיקה",
+        canonical_url=(
+            "https://wiki.example.test/wiki/test"
+        ),
+        latest_revision_id=20,
+        is_redirect=False,
+        is_active=True,
+    )
+
+    revision = KnowledgeDocumentRevision(
+        id="20",
+        document_id="10",
+        timestamp=datetime.now(UTC),
+        raw_content="""
+{{Metadata
+|סטטוס=מאושר
+|סוג מסמך=נוהל
+|פורטל=ציות ורגולציה
+|קטגוריה=KYC
+|קהל יעד=נציגים, מנהלי סניפים
+|בעלים=מחלקת ציות
+|מחלקה אחראית=ציות
+|עדכון אחרון=26/07/2026
+|גרסה=1.0
+}}
+
+= נוהל בדיקה =
+תוכן
+""",
+    )
+
+    persistence_revision, _ = (
+        KnowledgePersistenceMapper
+        .revision_to_models(
+            revision,
+            page=page,
+        )
+    )
+
+    metadata = (
+        persistence_revision.document_metadata
+    )
+
+    assert metadata is not None
+    assert metadata.status == "מאושר"
+    assert metadata.document_type == "נוהל"
+    assert metadata.portal == "ציות ורגולציה"
+    assert metadata.category == "KYC"
+    assert metadata.audience == [
+        "נציגים",
+        "מנהלי סניפים",
+    ]
+    assert metadata.owner == "מחלקת ציות"
+    assert (
+        metadata.responsible_department
+        == "ציות"
+    )
+    assert metadata.updated_on.isoformat() == (
+        "2026-07-26"
+    )
+    assert metadata.version == "1.0"
+
+
+def test_revision_to_models_maps_wiki_metadata() -> None:
+    from datetime import UTC, datetime
+
+    from app.db.models import KnowledgePage
+    from app.services.knowledge import (
+        KnowledgeDocumentRevision,
+    )
+    from app.services.knowledge.persistence import (
+        KnowledgePersistenceMapper,
+    )
+
+    page = KnowledgePage(
+        wiki_page_id=10,
+        namespace_id=0,
+        title="נוהל בדיקה",
+        normalized_title="נוהל בדיקה",
+        canonical_url=(
+            "https://wiki.example.test/wiki/test"
+        ),
+        latest_revision_id=20,
+        is_redirect=False,
+        is_active=True,
+    )
+
+    revision = KnowledgeDocumentRevision(
+        id="20",
+        document_id="10",
+        timestamp=datetime.now(UTC),
+        raw_content="""
+{{Metadata
+|סטטוס=מאושר
+|סוג מסמך=נוהל
+|פורטל=ציות ורגולציה
+|קטגוריה=KYC
+|קהל יעד=נציגים, מנהלי סניפים
+|בעלים=מחלקת ציות
+|מחלקה אחראית=ציות
+|עדכון אחרון=26/07/2026
+|גרסה=1.0
+}}
+
+= נוהל בדיקה =
+תוכן
+""",
+    )
+
+    persistence_revision, _ = (
+        KnowledgePersistenceMapper
+        .revision_to_models(
+            revision,
+            page=page,
+        )
+    )
+
+    metadata = (
+        persistence_revision.document_metadata
+    )
+
+    assert metadata is not None
+    assert metadata.status == "מאושר"
+    assert metadata.document_type == "נוהל"
+    assert metadata.portal == "ציות ורגולציה"
+    assert metadata.category == "KYC"
+    assert metadata.audience == [
+        "נציגים",
+        "מנהלי סניפים",
+    ]
+    assert metadata.owner == "מחלקת ציות"
+    assert (
+        metadata.responsible_department
+        == "ציות"
+    )
+    assert metadata.updated_on.isoformat() == (
+        "2026-07-26"
+    )
+    assert metadata.version == "1.0"
+
+
+def test_revision_to_models_maps_wiki_metadata() -> None:
+    from datetime import UTC, datetime
+
+    from app.db.models import KnowledgePage
+    from app.services.knowledge import (
+        KnowledgeDocumentRevision,
+    )
+    from app.services.knowledge.persistence import (
+        KnowledgePersistenceMapper,
+    )
+
+    page = KnowledgePage(
+        wiki_page_id=10,
+        namespace_id=0,
+        title="נוהל בדיקה",
+        normalized_title="נוהל בדיקה",
+        canonical_url=(
+            "https://wiki.example.test/wiki/test"
+        ),
+        latest_revision_id=20,
+        is_redirect=False,
+        is_active=True,
+    )
+
+    revision = KnowledgeDocumentRevision(
+        id="20",
+        document_id="10",
+        timestamp=datetime.now(UTC),
+        raw_content="""
+{{Metadata
+|סטטוס=מאושר
+|סוג מסמך=נוהל
+|פורטל=ציות ורגולציה
+|קטגוריה=KYC
+|קהל יעד=נציגים, מנהלי סניפים
+|בעלים=מחלקת ציות
+|מחלקה אחראית=ציות
+|עדכון אחרון=26/07/2026
+|גרסה=1.0
+}}
+
+= נוהל בדיקה =
+תוכן
+""",
+    )
+
+    persistence_revision, _ = (
+        KnowledgePersistenceMapper
+        .revision_to_models(
+            revision,
+            page=page,
+        )
+    )
+
+    metadata = (
+        persistence_revision.document_metadata
+    )
+
+    assert metadata is not None
+    assert metadata.status == "מאושר"
+    assert metadata.document_type == "נוהל"
+    assert metadata.portal == "ציות ורגולציה"
+    assert metadata.category == "KYC"
+    assert metadata.audience == [
+        "נציגים",
+        "מנהלי סניפים",
+    ]
+    assert metadata.owner == "מחלקת ציות"
+    assert (
+        metadata.responsible_department
+        == "ציות"
+    )
+    assert metadata.updated_on.isoformat() == (
+        "2026-07-26"
+    )
+    assert metadata.version == "1.0"

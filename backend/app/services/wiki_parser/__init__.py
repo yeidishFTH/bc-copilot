@@ -8,6 +8,10 @@ from app.services.wiki_parser.chunk_builder import (
 )
 from app.services.wiki_parser.cleaner import clean_wikitext_block
 from app.services.wiki_parser.parser import WikiDocumentParser
+from app.services.wiki_parser.metadata import (
+    WikiDocumentMetadata,
+    WikiMetadataParser,
+)
 
 __all__ = [
     "clean_wikitext_block",
@@ -16,4 +20,6 @@ __all__ = [
     "ParagraphNode",
     "SectionNode",
     "WikiDocumentParser",
+    "WikiMetadataParser",
+    "WikiDocumentMetadata",
 ]

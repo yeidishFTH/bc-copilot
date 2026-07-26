@@ -1,8 +1,9 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
+    Date,
     ARRAY,
     BigInteger,
     Boolean,
@@ -102,9 +103,64 @@ class KnowledgeRevision(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    document_metadata: Mapped[
+        "KnowledgeRevisionMetadata | None"
+    ] = relationship(
+        back_populates="revision",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
     chunks: Mapped[list["KnowledgeChunk"]] = relationship(
         back_populates="revision",
         cascade="all, delete-orphan",
+    )
+
+
+class KnowledgeRevisionMetadata(Base):
+    __tablename__ = "knowledge_revision_metadata"
+
+    revision_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "knowledge_revisions.id",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+    )
+    status: Mapped[str | None] = mapped_column(
+        Text
+    )
+    document_type: Mapped[str | None] = mapped_column(
+        Text
+    )
+    portal: Mapped[str | None] = mapped_column(
+        Text
+    )
+    category: Mapped[str | None] = mapped_column(
+        Text
+    )
+    audience: Mapped[list[str]] = mapped_column(
+        ARRAY(Text),
+        nullable=False,
+        default=list,
+    )
+    owner: Mapped[str | None] = mapped_column(
+        Text
+    )
+    responsible_department: Mapped[str | None] = (
+        mapped_column(Text)
+    )
+    updated_on: Mapped[date | None] = mapped_column(
+        Date
+    )
+    version: Mapped[str | None] = mapped_column(
+        Text
+    )
+
+    revision: Mapped["KnowledgeRevision"] = (
+        relationship(
+            back_populates="document_metadata",
+        )
     )
 
 
