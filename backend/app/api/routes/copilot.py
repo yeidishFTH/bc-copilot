@@ -13,6 +13,7 @@ from app.models.copilot import (
 from app.services.copilot import (
     CitationValidationError,
     CopilotAnswerService,
+    CopilotConversationMessage,
     OpenAIResponseError,
 )
 
@@ -35,6 +36,13 @@ async def ask_copilot(
     try:
         result = await service.answer(
             request.question,
+            history=tuple(
+                CopilotConversationMessage(
+                    role=message.role,
+                    content=message.content,
+                )
+                for message in request.history
+            ),
             namespace_ids=request.namespace_ids,
             search_limit=request.search_limit,
             max_characters=request.max_characters,

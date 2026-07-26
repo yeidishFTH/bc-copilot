@@ -4,6 +4,7 @@ from app.services.copilot.citations import (
 )
 from app.services.copilot.models import (
     CopilotAnswer,
+    CopilotConversationMessage,
     CopilotSource,
 )
 from app.services.copilot.prompts import (
@@ -26,6 +27,7 @@ __all__ = [
     "CitationValidator",
     "CopilotAnswer",
     "CopilotAnswerService",
+    "CopilotConversationMessage",
     "CopilotSource",
     "SYSTEM_PROMPT",
     "TextGenerationClient",

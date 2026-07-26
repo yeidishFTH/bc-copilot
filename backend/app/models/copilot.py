@@ -1,12 +1,43 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel, Field, field_validator
+
+
+class CopilotConversationMessageRequest(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(
+        min_length=1,
+        max_length=4_000,
+    )
+
+    @field_validator("content")
+    @classmethod
+    def validate_content(
+        cls,
+        value: str,
+    ) -> str:
+        normalized = " ".join(value.split())
+
+        if not normalized:
+            raise ValueError(
+                "conversation content cannot be empty"
+            )
+
+        return normalized
 
 
 class CopilotAskRequest(BaseModel):
     question: str = Field(
         min_length=1,
         max_length=2_000,
+    )
+    history: list[
+        CopilotConversationMessageRequest
+    ] = Field(
+        default_factory=list,
+        max_length=12,
     )
     namespace_ids: list[int] | None = None
     search_limit: int = Field(

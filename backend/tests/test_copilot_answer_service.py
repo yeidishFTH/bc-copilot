@@ -284,3 +284,77 @@ async def test_answer_rejects_unknown_model_citation() -> None:
         match="unavailable source indexes: 99",
     ):
         await service.answer("מחיקת כרטיס")
+
+
+@pytest.mark.asyncio
+async def test_answer_uses_history_for_follow_up_search() -> None:
+    from app.services.copilot import (
+        CopilotConversationMessage,
+    )
+
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    result = await service.answer(
+        "ומה עושים אם הוא מסרב?",
+        history=(
+            CopilotConversationMessage(
+                role="user",
+                content="איך מזהים לקוח חדש?",
+            ),
+            CopilotConversationMessage(
+                role="assistant",
+                content=(
+                    "יש לבצע זיהוי פנים מול פנים. "
+                    "[SOURCE 1]"
+                ),
+            ),
+        ),
+    )
+
+    assert result.question == "ומה עושים אם הוא מסרב?"
+    assert context_service.calls[0]["query"] == (
+        "איך מזהים לקוח חדש? "
+        "ומה עושים אם הוא מסרב?"
+    )
+
+    prompt = generator.calls[0]["user_prompt"]
+
+    assert "איך מזהים לקוח חדש?" in prompt
+    assert "ומה עושים אם הוא מסרב?" in prompt
+    assert "Copilot:" in prompt
+
+
+@pytest.mark.asyncio
+async def test_answer_rejects_too_much_history() -> None:
+    from app.services.copilot import (
+        CopilotConversationMessage,
+    )
+
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    history = tuple(
+        CopilotConversationMessage(
+            role="user",
+            content=f"שאלה {index}",
+        )
+        for index in range(13)
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="more than 12",
+    ):
+        await service.answer(
+            "שאלה נוכחית",
+            history=history,
+        )

@@ -7,6 +7,7 @@ from app.services.copilot.citations import (
 )
 from app.services.copilot.models import (
     CopilotAnswer,
+    CopilotConversationMessage,
     CopilotSource,
 )
 from app.services.copilot.prompts import (
@@ -50,6 +51,7 @@ class CopilotAnswerService:
         self,
         question: str,
         *,
+        history: Sequence[CopilotConversationMessage] = (),
         namespace_ids: Sequence[int] | None = None,
         search_limit: int = DEFAULT_SEARCH_LIMIT,
         max_characters: int = DEFAULT_MAX_CHARACTERS,
@@ -57,9 +59,14 @@ class CopilotAnswerService:
         max_chunks_per_page: int = DEFAULT_MAX_CHUNKS_PER_PAGE,
     ) -> CopilotAnswer:
         normalized_question = self._normalize_question(question)
+        normalized_history = self._normalize_history(history)
+        retrieval_query = self._build_retrieval_query(
+            normalized_question,
+            normalized_history,
+        )
 
         context = await self._context_service.build_context(
-            normalized_question,
+            retrieval_query,
             search_limit=search_limit,
             namespace_ids=namespace_ids,
             max_characters=max_characters,
@@ -95,6 +102,7 @@ class CopilotAnswerService:
             user_prompt=build_user_prompt(
                 question=normalized_question,
                 context=context.text,
+                history=normalized_history,
             ),
         )
 
@@ -137,6 +145,77 @@ class CopilotAnswerService:
             )
 
         return normalized
+
+    @classmethod
+    def _normalize_history(
+        cls,
+        history: Sequence[CopilotConversationMessage],
+    ) -> tuple[CopilotConversationMessage, ...]:
+        if len(history) > 12:
+            raise ValueError(
+                "history cannot contain more than 12 messages"
+            )
+
+        normalized: list[CopilotConversationMessage] = []
+
+        for message in history:
+            if not isinstance(
+                message,
+                CopilotConversationMessage,
+            ):
+                raise ValueError(
+                    "history must contain "
+                    "CopilotConversationMessage values"
+                )
+
+            if message.role not in {"user", "assistant"}:
+                raise ValueError(
+                    "history role must be user or assistant"
+                )
+
+            content = " ".join(message.content.split())
+
+            if not content:
+                raise ValueError(
+                    "history message content cannot be empty"
+                )
+
+            if len(content) > 4_000:
+                raise ValueError(
+                    "history message content cannot exceed "
+                    "4000 characters"
+                )
+
+            normalized.append(
+                CopilotConversationMessage(
+                    role=message.role,
+                    content=content,
+                )
+            )
+
+        return tuple(normalized)
+
+    @staticmethod
+    def _build_retrieval_query(
+        question: str,
+        history: Sequence[CopilotConversationMessage],
+    ) -> str:
+        previous_user_messages = [
+            message.content
+            for message in history
+            if message.role == "user"
+        ]
+
+        relevant_history = previous_user_messages[-2:]
+
+        if not relevant_history:
+            return question
+
+        combined = " ".join(
+            [*relevant_history, question]
+        )
+
+        return combined[:2_000]
 
     @staticmethod
     def _normalize_generated_answer(answer: str) -> str:

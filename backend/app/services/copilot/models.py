@@ -4,6 +4,14 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
+class CopilotConversationMessage:
+    """One previous message supplied as conversational context."""
+
+    role: str
+    content: str
+
+
+@dataclass(frozen=True, slots=True)
 class CopilotSource:
     """One knowledge source cited by a Copilot answer."""
 

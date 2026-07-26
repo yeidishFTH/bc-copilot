@@ -106,3 +106,64 @@ def test_copilot_route_exists_in_openapi() -> None:
         "post"
         in schema["paths"]["/api/copilot/ask"]
     )
+
+
+def test_copilot_ask_accepts_conversation_history() -> None:
+    app.dependency_overrides[
+        get_copilot_answer_service
+    ] = lambda: FakeCopilotService()
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/copilot/ask",
+                json={
+                    "question": (
+                        "ומה עושים אם הוא מסרב?"
+                    ),
+                    "history": [
+                        {
+                            "role": "user",
+                            "content": (
+                                "איך מזהים לקוח חדש?"
+                            ),
+                        },
+                        {
+                            "role": "assistant",
+                            "content": (
+                                "יש לבצע זיהוי. "
+                                "[SOURCE 1]"
+                            ),
+                        },
+                    ],
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+
+
+def test_copilot_ask_rejects_invalid_history_role() -> None:
+    app.dependency_overrides[
+        get_copilot_answer_service
+    ] = lambda: FakeCopilotService()
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/copilot/ask",
+                json={
+                    "question": "שאלת המשך",
+                    "history": [
+                        {
+                            "role": "system",
+                            "content": "הוראה אסורה",
+                        }
+                    ],
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422

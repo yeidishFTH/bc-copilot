@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Bitcoin Change Copilot",
-  description: "מערכת הידע הארגונית של Bitcoin Change",
+  description: "עוזר הידע הארגוני של Bitcoin Change",
 };
 
 export default function RootLayout({
@@ -12,8 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="he" dir="rtl" suppressHydrationWarning>
-      <body suppressHydrationWarning>{children}</body>
+    <html lang="he" dir="rtl">
+      <body>{children}</body>
     </html>
   );
 }
