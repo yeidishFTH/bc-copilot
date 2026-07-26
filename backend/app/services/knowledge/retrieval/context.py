@@ -4,6 +4,7 @@ import math
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 from typing import Protocol, runtime_checkable
 
 from app.services.knowledge.models import KnowledgeSearchResult
@@ -22,6 +23,15 @@ class KnowledgeContextSource:
     canonical_url: str
     content: str
     rank: float
+    status: str | None = None
+    document_type: str | None = None
+    portal: str | None = None
+    category: str | None = None
+    audience: tuple[str, ...] = ()
+    owner: str | None = None
+    responsible_department: str | None = None
+    updated_on: date | None = None
+    version: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,6 +202,17 @@ class KnowledgeContextBuilder:
             canonical_url=result.canonical_url,
             content=result.content.strip(),
             rank=result.rank,
+            status=result.status,
+            document_type=result.document_type,
+            portal=result.portal,
+            category=result.category,
+            audience=result.audience,
+            owner=result.owner,
+            responsible_department=(
+                result.responsible_department
+            ),
+            updated_on=result.updated_on,
+            version=result.version,
         )
 
     @classmethod
@@ -234,6 +255,17 @@ class KnowledgeContextBuilder:
             canonical_url=source.canonical_url,
             content="",
             rank=source.rank,
+            status=source.status,
+            document_type=source.document_type,
+            portal=source.portal,
+            category=source.category,
+            audience=source.audience,
+            owner=source.owner,
+            responsible_department=(
+                source.responsible_department
+            ),
+            updated_on=source.updated_on,
+            version=source.version,
         )
         empty_block = cls._render_source(empty_source)
         available_content = max_characters - len(empty_block)
@@ -253,6 +285,17 @@ class KnowledgeContextBuilder:
             canonical_url=source.canonical_url,
             content=f"{shortened_content}…",
             rank=source.rank,
+            status=source.status,
+            document_type=source.document_type,
+            portal=source.portal,
+            category=source.category,
+            audience=source.audience,
+            owner=source.owner,
+            responsible_department=(
+                source.responsible_department
+            ),
+            updated_on=source.updated_on,
+            version=source.version,
         )
 
     @staticmethod

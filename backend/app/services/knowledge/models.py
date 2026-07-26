@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +52,15 @@ class KnowledgeSearchResult:
     content: str
     token_count: int | None
     rank: float
+    status: str | None = None
+    document_type: str | None = None
+    portal: str | None = None
+    category: str | None = None
+    audience: tuple[str, ...] = ()
+    owner: str | None = None
+    responsible_department: str | None = None
+    updated_on: date | None = None
+    version: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

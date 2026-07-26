@@ -10,6 +10,7 @@ from app.db.models import (
     KnowledgeChunk,
     KnowledgePage,
     KnowledgeRevision,
+    KnowledgeRevisionMetadata,
 )
 from app.services.knowledge.models import KnowledgeSearchResult
 
@@ -195,6 +196,15 @@ class KnowledgeSearchRepository:
                 KnowledgeChunk.content,
                 KnowledgeChunk.token_count,
                 rank,
+                KnowledgeRevisionMetadata.status,
+                KnowledgeRevisionMetadata.document_type,
+                KnowledgeRevisionMetadata.portal,
+                KnowledgeRevisionMetadata.category,
+                KnowledgeRevisionMetadata.audience,
+                KnowledgeRevisionMetadata.owner,
+                KnowledgeRevisionMetadata.responsible_department,
+                KnowledgeRevisionMetadata.updated_on,
+                KnowledgeRevisionMetadata.version,
             )
             .select_from(KnowledgeChunk)
             .join(
@@ -206,6 +216,11 @@ class KnowledgeSearchRepository:
                 KnowledgePage,
                 KnowledgePage.id
                 == KnowledgeRevision.page_id,
+            )
+            .outerjoin(
+                KnowledgeRevisionMetadata,
+                KnowledgeRevisionMetadata.revision_id
+                == KnowledgeRevision.id,
             )
             .where(
                 KnowledgePage.is_active.is_(True),
@@ -336,6 +351,54 @@ class KnowledgeSearchRepository:
             content=row.content,
             token_count=row.token_count,
             rank=float(row.rank),
+            status=getattr(
+                row,
+                "status",
+                None,
+            ),
+            document_type=getattr(
+                row,
+                "document_type",
+                None,
+            ),
+            portal=getattr(
+                row,
+                "portal",
+                None,
+            ),
+            category=getattr(
+                row,
+                "category",
+                None,
+            ),
+            audience=tuple(
+                getattr(
+                    row,
+                    "audience",
+                    None,
+                )
+                or ()
+            ),
+            owner=getattr(
+                row,
+                "owner",
+                None,
+            ),
+            responsible_department=getattr(
+                row,
+                "responsible_department",
+                None,
+            ),
+            updated_on=getattr(
+                row,
+                "updated_on",
+                None,
+            ),
+            version=getattr(
+                row,
+                "version",
+                None,
+            ),
         )
 
     @staticmethod

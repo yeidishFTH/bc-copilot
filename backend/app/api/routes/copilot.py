@@ -90,6 +90,17 @@ async def ask_copilot(
                 rank=source.rank,
 
                 content=source.content,
+                status=source.status,
+                document_type=source.document_type,
+                portal=source.portal,
+                category=source.category,
+                audience=list(source.audience),
+                owner=source.owner,
+                responsible_department=(
+                    source.responsible_department
+                ),
+                updated_on=source.updated_on,
+                version=source.version,
             )
             for source in result.sources
         ],

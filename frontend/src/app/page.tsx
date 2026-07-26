@@ -12,6 +12,15 @@ type CopilotSource = {
   chunk_id: string;
   rank: number;
   content: string;
+  status?: string | null;
+  document_type?: string | null;
+  portal?: string | null;
+  category?: string | null;
+  audience?: string[];
+  owner?: string | null;
+  responsible_department?: string | null;
+  updated_on?: string | null;
+  version?: string | null;
 };
 
 type CopilotResponse = {
@@ -426,8 +435,15 @@ function getSourceKind(
   tone: string;
 } {
   const title = source.title.trim();
+  const documentType = (
+    source.document_type?.trim()
+    ?? ""
+  );
 
-  if (title.includes("נוהל")) {
+  if (
+    documentType === "נוהל"
+    || title.includes("נוהל")
+  ) {
     return {
       label: "נוהל",
       icon: "▤",
@@ -436,7 +452,9 @@ function getSourceKind(
   }
 
   if (
-    title.includes("מדריך")
+    documentType === "מדריך"
+    || documentType === "הדרכה"
+    || title.includes("מדריך")
     || title.includes("הדרכה")
   ) {
     return {
@@ -447,7 +465,9 @@ function getSourceKind(
   }
 
   if (
-    title.includes("צ'קליסט")
+    documentType === "צ׳קליסט"
+    || documentType === "צ'קליסט"
+    || title.includes("צ'קליסט")
     || title.includes("צ׳קליסט")
   ) {
     return {
@@ -458,7 +478,8 @@ function getSourceKind(
   }
 
   if (
-    title.includes("פורטל")
+    documentType === "פורטל"
+    || title.includes("פורטל")
     || title === "Main Page"
   ) {
     return {
@@ -511,6 +532,58 @@ function SourceCard({
   const heading = getHeading(source);
   const sourceKind = getSourceKind(source);
   const relevanceLabel = getRelevanceLabel(source.rank);
+
+  const metadataItems = [
+    source.status
+      ? {
+          label: source.status,
+          className: "source-chip-status",
+        }
+      : null,
+    source.portal
+      ? {
+          label: source.portal,
+          className: "source-chip-portal",
+        }
+      : null,
+    source.category
+      && source.category !== source.portal
+      ? {
+          label: source.category,
+          className: "source-chip-category",
+        }
+      : null,
+    source.audience?.length
+      ? {
+          label: source.audience
+            .slice(0, 2)
+            .join(", "),
+          className: "source-chip-audience",
+        }
+      : null,
+  ].filter((
+    item,
+  ): item is {
+    label: string;
+    className: string;
+  } => item !== null);
+
+  const formattedUpdatedOn = (
+    source.updated_on
+      ? new Intl.DateTimeFormat(
+          "he-IL",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          },
+        ).format(
+          new Date(
+            `${source.updated_on}T00:00:00`,
+          ),
+        )
+      : null
+  );
 
   async function copySource(): Promise<void> {
     if (!hasContent) {
@@ -588,6 +661,22 @@ function SourceCard({
           <span className="source-heading-path">
             {heading}
           </span>
+
+          {metadataItems.length > 0 && (
+            <span className="source-metadata-chips">
+              {metadataItems.map((item) => (
+                <span
+                  className={[
+                    "source-metadata-chip",
+                    item.className,
+                  ].join(" ")}
+                  key={`${item.className}-${item.label}`}
+                >
+                  {item.label}
+                </span>
+              ))}
+            </span>
+          )}
         </span>
 
         <span className="reference-source-status">
@@ -626,6 +715,50 @@ function SourceCard({
             <p className="reference-source-empty">
               לא קיים קטע מקורי להצגה.
             </p>
+          )}
+
+          {(
+            formattedUpdatedOn
+            || source.version
+            || source.owner
+            || source.responsible_department
+          ) && (
+            <div className="source-metadata-details">
+              {formattedUpdatedOn && (
+                <span>
+                  <strong>עודכן:</strong>
+                  {" "}
+                  {formattedUpdatedOn}
+                </span>
+              )}
+
+              {source.version && (
+                <span>
+                  <strong>גרסה:</strong>
+                  {" "}
+                  {source.version}
+                </span>
+              )}
+
+              {source.owner
+              && source.owner !== "לא נמסר" && (
+                <span>
+                  <strong>בעלים:</strong>
+                  {" "}
+                  {source.owner}
+                </span>
+              )}
+
+              {source.responsible_department
+              && source.responsible_department
+                !== "לא נמסר" && (
+                <span>
+                  <strong>מחלקה:</strong>
+                  {" "}
+                  {source.responsible_department}
+                </span>
+              )}
+            </div>
           )}
 
           <div className="source-actions">

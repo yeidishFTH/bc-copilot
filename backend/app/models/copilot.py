@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -70,6 +72,17 @@ class CopilotSourceResponse(BaseModel):
     chunk_id: str
     rank: float
     content: str = ""
+    status: str | None = None
+    document_type: str | None = None
+    portal: str | None = None
+    category: str | None = None
+    audience: list[str] = Field(
+        default_factory=list
+    )
+    owner: str | None = None
+    responsible_department: str | None = None
+    updated_on: date | None = None
+    version: str | None = None
 
 
 class CopilotAskResponse(BaseModel):

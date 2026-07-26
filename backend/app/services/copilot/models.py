@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +23,15 @@ class CopilotSource:
     chunk_id: str
     rank: float
     content: str = ""
+    status: str | None = None
+    document_type: str | None = None
+    portal: str | None = None
+    category: str | None = None
+    audience: tuple[str, ...] = ()
+    owner: str | None = None
+    responsible_department: str | None = None
+    updated_on: date | None = None
+    version: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
