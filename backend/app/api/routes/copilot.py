@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
+from collections.abc import AsyncIterator
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.api.dependencies import (
     get_copilot_answer_service,
@@ -96,4 +100,80 @@ async def ask_copilot(
         context_truncated=(
             result.context_truncated
         ),
+    )
+
+
+@router.post("/ask/stream")
+async def stream_copilot_answer(
+    request: CopilotAskRequest,
+    service: CopilotAnswerService = Depends(
+        get_copilot_answer_service
+    ),
+) -> StreamingResponse:
+    async def event_stream() -> AsyncIterator[bytes]:
+        try:
+            async for event in service.stream_answer(
+                request.question,
+                history=tuple(
+                    CopilotConversationMessage(
+                        role=message.role,
+                        content=message.content,
+                    )
+                    for message in request.history
+                ),
+                namespace_ids=request.namespace_ids,
+                search_limit=request.search_limit,
+                max_characters=request.max_characters,
+                max_chunks=request.max_chunks,
+                max_chunks_per_page=(
+                    request.max_chunks_per_page
+                ),
+            ):
+                yield (
+                    json.dumps(
+                        event,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
+                    + "\n"
+                ).encode("utf-8")
+
+        except ValueError as error:
+            yield (
+                json.dumps(
+                    {
+                        "type": "error",
+                        "detail": str(error),
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            ).encode("utf-8")
+
+        except (
+            CitationValidationError,
+            OpenAIResponseError,
+            RuntimeError,
+        ):
+            yield (
+                json.dumps(
+                    {
+                        "type": "error",
+                        "detail": (
+                            "Copilot could not generate a valid "
+                            "grounded answer"
+                        ),
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            ).encode("utf-8")
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="application/x-ndjson",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )

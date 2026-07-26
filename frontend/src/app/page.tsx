@@ -196,7 +196,7 @@ export default function Home() {
         .slice(-12);
 
       const response = await fetch(
-        `${API_BASE_URL}/api/copilot/ask`,
+        `${API_BASE_URL}/api/copilot/ask/stream`,
         {
           method: "POST",
           headers: {
@@ -214,37 +214,159 @@ export default function Home() {
         },
       );
 
-      let payload: unknown;
-
-      try {
-        payload = await response.json();
-      } catch {
-        payload = null;
-      }
-
       if (!response.ok) {
-        const detail = (
-          payload
-          && typeof payload === "object"
-          && "detail" in payload
-          && typeof payload.detail === "string"
-        )
-          ? payload.detail
-          : "השרת לא הצליח להחזיר תשובה.";
-
-        throw new Error(detail);
+        throw new Error(
+          "השרת לא הצליח להתחיל את התשובה.",
+        );
       }
 
-      const copilotResponse = payload as CopilotResponse;
+      if (!response.body) {
+        throw new Error(
+          "הדפדפן לא קיבל זרם תשובה מהשרת.",
+        );
+      }
+
+      const entryId = createId();
+
+      const emptyResponse: CopilotResponse = {
+        question: normalizedQuestion,
+        answer: "",
+        grounded: false,
+        sources: [],
+        context_character_count: 0,
+        context_estimated_tokens: 0,
+        context_truncated: false,
+      };
 
       setConversation((current) => [
         ...current,
         {
-          id: createId(),
+          id: entryId,
           question: normalizedQuestion,
-          response: copilotResponse,
+          response: emptyResponse,
         },
       ]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      function updateEntry(
+        updater: (
+          responseValue: CopilotResponse,
+        ) => CopilotResponse,
+      ): void {
+        setConversation((current) => (
+          current.map((entry) => (
+            entry.id === entryId
+              ? {
+                  ...entry,
+                  response: updater(entry.response),
+                }
+              : entry
+          ))
+        ));
+      }
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        buffer += decoder.decode(
+          value ?? new Uint8Array(),
+          {
+            stream: !done,
+          },
+        );
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
+          }
+
+          const event = JSON.parse(line) as {
+            type: string;
+            delta?: string;
+            answer?: string;
+            grounded?: boolean;
+            sources?: CopilotSource[];
+            question?: string;
+            context_character_count?: number;
+            context_estimated_tokens?: number;
+            context_truncated?: boolean;
+            detail?: string;
+          };
+
+          if (event.type === "metadata") {
+            updateEntry((currentResponse) => ({
+              ...currentResponse,
+              question: (
+                event.question
+                ?? normalizedQuestion
+              ),
+              grounded: Boolean(event.grounded),
+              sources: event.sources ?? [],
+              context_character_count: (
+                event.context_character_count
+                ?? 0
+              ),
+              context_estimated_tokens: (
+                event.context_estimated_tokens
+                ?? 0
+              ),
+              context_truncated: Boolean(
+                event.context_truncated,
+              ),
+            }));
+          }
+
+          if (
+            event.type === "delta"
+            && typeof event.delta === "string"
+          ) {
+            updateEntry((currentResponse) => ({
+              ...currentResponse,
+              answer: (
+                currentResponse.answer
+                + event.delta
+              ),
+            }));
+
+            // Give React and the browser a paint opportunity.
+            // Fetch may deliver several NDJSON events in one network chunk,
+            // otherwise every state update can be batched until completion.
+            await new Promise<void>((resolve) => {
+              window.requestAnimationFrame(() => {
+                resolve();
+              });
+            });
+          }
+
+          if (
+            event.type === "complete"
+            && typeof event.answer === "string"
+          ) {
+            updateEntry((currentResponse) => ({
+              ...currentResponse,
+              answer: event.answer ?? "",
+              grounded: Boolean(event.grounded),
+            }));
+          }
+
+          if (event.type === "error") {
+            throw new Error(
+              event.detail
+              ?? "יצירת התשובה נכשלה.",
+            );
+          }
+        }
+
+        if (done) {
+          break;
+        }
+      }
     } catch (requestError) {
       const message = (
         requestError instanceof Error
@@ -452,7 +574,13 @@ export default function Home() {
             </article>
           ))}
 
-          {isLoading && (
+          {isLoading
+          && (
+            conversation.length === 0
+            || conversation[
+              conversation.length - 1
+            ].response.answer.length === 0
+          ) && (
             <div className="answer-row loading-row">
               <div className="avatar bot-avatar">
                 ₿

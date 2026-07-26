@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 
 from app.services.copilot.citations import (
     CitationValidator,
@@ -14,7 +14,10 @@ from app.services.copilot.prompts import (
     SYSTEM_PROMPT,
     build_user_prompt,
 )
-from app.services.copilot.protocol import TextGenerationClient
+from app.services.copilot.protocol import (
+    StreamingTextGenerationClient,
+    TextGenerationClient,
+)
 from app.services.knowledge.retrieval import (
     KnowledgeContextService,
 )
@@ -128,6 +131,132 @@ class CopilotAnswerService:
             context_estimated_tokens=context.estimated_tokens,
             context_truncated=context.truncated,
         )
+
+    async def stream_answer(
+        self,
+        question: str,
+        *,
+        history: Sequence[CopilotConversationMessage] = (),
+        namespace_ids: Sequence[int] | None = None,
+        search_limit: int = DEFAULT_SEARCH_LIMIT,
+        max_characters: int = DEFAULT_MAX_CHARACTERS,
+        max_chunks: int = DEFAULT_MAX_CHUNKS,
+        max_chunks_per_page: int = DEFAULT_MAX_CHUNKS_PER_PAGE,
+    ) -> AsyncIterator[dict[str, object]]:
+        normalized_question = self._normalize_question(question)
+        normalized_history = self._normalize_history(history)
+        retrieval_query = self._build_retrieval_query(
+            normalized_question,
+            normalized_history,
+        )
+
+        context = await self._context_service.build_context(
+            retrieval_query,
+            search_limit=search_limit,
+            namespace_ids=namespace_ids,
+            max_characters=max_characters,
+            max_chunks=max_chunks,
+            max_chunks_per_page=max_chunks_per_page,
+        )
+
+        sources = tuple(
+            CopilotSource(
+                index=source.index,
+                title=source.title,
+                heading_path=source.heading_path,
+                canonical_url=source.canonical_url,
+                chunk_id=source.chunk_id,
+                rank=source.rank,
+            )
+            for source in context.sources
+        )
+
+        yield {
+            "type": "metadata",
+            "question": normalized_question,
+            "grounded": bool(sources),
+            "sources": [
+                {
+                    "index": source.index,
+                    "title": source.title,
+                    "heading_path": list(
+                        source.heading_path
+                    ),
+                    "canonical_url": (
+                        source.canonical_url
+                    ),
+                    "chunk_id": source.chunk_id,
+                    "rank": source.rank,
+                }
+                for source in sources
+            ],
+            "context_character_count": (
+                context.character_count
+            ),
+            "context_estimated_tokens": (
+                context.estimated_tokens
+            ),
+            "context_truncated": context.truncated,
+        }
+
+        if not sources:
+            yield {
+                "type": "delta",
+                "delta": self.NO_CONTEXT_ANSWER,
+            }
+            yield {
+                "type": "complete",
+                "answer": self.NO_CONTEXT_ANSWER,
+                "grounded": False,
+            }
+            return
+
+        if not isinstance(
+            self._generator,
+            StreamingTextGenerationClient,
+        ):
+            raise RuntimeError(
+                "configured text generator does not support streaming"
+            )
+
+        answer_parts: list[str] = []
+
+        async for delta in self._generator.stream(
+            system_prompt=SYSTEM_PROMPT,
+            user_prompt=build_user_prompt(
+                question=normalized_question,
+                context=context.text,
+                history=normalized_history,
+            ),
+        ):
+            if not delta:
+                continue
+
+            answer_parts.append(delta)
+
+            yield {
+                "type": "delta",
+                "delta": delta,
+            }
+
+        normalized_answer = self._normalize_generated_answer(
+            "".join(answer_parts)
+        )
+
+        self._citation_validator.validate(
+            normalized_answer,
+            available_source_indexes=tuple(
+                source.index
+                for source in sources
+            ),
+            require_citation=True,
+        )
+
+        yield {
+            "type": "complete",
+            "answer": normalized_answer,
+            "grounded": True,
+        }
 
     @staticmethod
     def _normalize_question(question: str) -> str:

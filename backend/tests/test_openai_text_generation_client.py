@@ -187,3 +187,79 @@ def test_client_rejects_empty_api_key(
         OpenAITextGenerationClient(
             api_key=api_key
         )
+
+
+@pytest.mark.asyncio
+async def test_stream_yields_output_text_deltas() -> None:
+    async def handler(
+        request: httpx.Request,
+    ) -> httpx.Response:
+        assert request.url.path == "/v1/responses"
+
+        body = json.loads(request.content)
+        assert body["stream"] is True
+
+        content = (
+            'data: {"type":"response.created"}\n\n'
+            'data: {"type":"response.output_text.delta",'
+            '"delta":"שלום"}\n\n'
+            'data: {"type":"response.output_text.delta",'
+            '"delta":" עולם"}\n\n'
+            'data: {"type":"response.completed"}\n\n'
+            'data: [DONE]\n\n'
+        )
+
+        return httpx.Response(
+            200,
+            text=content,
+            headers={
+                "Content-Type": "text/event-stream",
+            },
+        )
+
+    client = OpenAITextGenerationClient(
+        api_key="test-key",
+        transport=httpx.MockTransport(handler),
+    )
+
+    deltas = [
+        delta
+        async for delta in client.stream(
+            system_prompt="System",
+            user_prompt="User",
+        )
+    ]
+
+    assert deltas == ["שלום", " עולם"]
+
+
+@pytest.mark.asyncio
+async def test_stream_rejects_openai_error_event() -> None:
+    async def handler(
+        _: httpx.Request,
+    ) -> httpx.Response:
+        return httpx.Response(
+            200,
+            text=(
+                'data: {"type":"error","error":'
+                '{"message":"stream failed"}}\n\n'
+            ),
+            headers={
+                "Content-Type": "text/event-stream",
+            },
+        )
+
+    client = OpenAITextGenerationClient(
+        api_key="test-key",
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(
+        OpenAIResponseError,
+        match="stream failed",
+    ):
+        async for _ in client.stream(
+            system_prompt="System",
+            user_prompt="User",
+        ):
+            pass

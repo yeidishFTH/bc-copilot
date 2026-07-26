@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+import json
+from collections.abc import AsyncIterator, Mapping
 from typing import Any
 
 import httpx
@@ -80,36 +81,15 @@ class OpenAITextGenerationClient:
             field_name="user_prompt",
         )
 
-        client_arguments: dict[str, Any] = {
-            "base_url": self._base_url,
-            "timeout": httpx.Timeout(
-                self._timeout_seconds
-            ),
-            "headers": {
-                "Authorization": f"Bearer {self._api_key}",
-                "Content-Type": "application/json",
-            },
-        }
-
-        if self._transport is not None:
-            client_arguments["transport"] = self._transport
-
-        async with httpx.AsyncClient(
-            **client_arguments
-        ) as client:
+        async with self._build_client() as client:
             try:
                 response = await client.post(
                     self.RESPONSES_PATH,
-                    json={
-                        "model": self._model,
-                        "instructions": (
-                            normalized_system_prompt
-                        ),
-                        "input": normalized_user_prompt,
-                        "reasoning": {
-                            "effort": "low",
-                        },
-                    },
+                    json=self._build_request_body(
+                        system_prompt=normalized_system_prompt,
+                        user_prompt=normalized_user_prompt,
+                        stream=False,
+                    ),
                 )
             except httpx.TimeoutException as error:
                 raise OpenAIResponseError(
@@ -138,6 +118,125 @@ class OpenAITextGenerationClient:
             )
 
         return self._extract_output_text(payload)
+
+    async def stream(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+    ) -> AsyncIterator[str]:
+        normalized_system_prompt = self._normalize_prompt(
+            system_prompt,
+            field_name="system_prompt",
+        )
+        normalized_user_prompt = self._normalize_prompt(
+            user_prompt,
+            field_name="user_prompt",
+        )
+
+        async with self._build_client() as client:
+            try:
+                async with client.stream(
+                    "POST",
+                    self.RESPONSES_PATH,
+                    json=self._build_request_body(
+                        system_prompt=normalized_system_prompt,
+                        user_prompt=normalized_user_prompt,
+                        stream=True,
+                    ),
+                ) as response:
+                    if response.is_error:
+                        body = await response.aread()
+                        error_response = httpx.Response(
+                            status_code=response.status_code,
+                            headers=response.headers,
+                            content=body,
+                            request=response.request,
+                        )
+                        raise OpenAIResponseError(
+                            self._format_http_error(
+                                error_response
+                            )
+                        )
+
+                    async for line in response.aiter_lines():
+                        if not line.startswith("data:"):
+                            continue
+
+                        data = line[5:].strip()
+
+                        if not data or data == "[DONE]":
+                            continue
+
+                        try:
+                            event = json.loads(data)
+                        except json.JSONDecodeError as error:
+                            raise OpenAIResponseError(
+                                "OpenAI returned invalid streaming JSON"
+                            ) from error
+
+                        if not isinstance(event, Mapping):
+                            continue
+
+                        event_type = event.get("type")
+
+                        if event_type == "response.output_text.delta":
+                            delta = event.get("delta")
+
+                            if isinstance(delta, str) and delta:
+                                yield delta
+
+                        elif event_type in {
+                            "response.failed",
+                            "response.incomplete",
+                            "error",
+                        }:
+                            raise OpenAIResponseError(
+                                self._format_stream_error(event)
+                            )
+
+            except httpx.TimeoutException as error:
+                raise OpenAIResponseError(
+                    "OpenAI streaming request timed out"
+                ) from error
+            except httpx.RequestError as error:
+                raise OpenAIResponseError(
+                    "OpenAI streaming connection failed"
+                ) from error
+
+    def _build_client(self) -> httpx.AsyncClient:
+        client_arguments: dict[str, Any] = {
+            "base_url": self._base_url,
+            "timeout": httpx.Timeout(
+                self._timeout_seconds
+            ),
+            "headers": {
+                "Authorization": f"Bearer {self._api_key}",
+                "Content-Type": "application/json",
+            },
+        }
+
+        if self._transport is not None:
+            client_arguments["transport"] = self._transport
+
+        return httpx.AsyncClient(**client_arguments)
+
+    def _build_request_body(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        stream: bool,
+    ) -> dict[str, Any]:
+        return {
+            "model": self._model,
+            "instructions": system_prompt,
+            "input": user_prompt,
+            "reasoning": {
+                "effort": "low",
+            },
+            "stream": stream,
+        }
 
     @classmethod
     def _extract_output_text(
@@ -240,3 +339,26 @@ class OpenAITextGenerationClient:
             return f"{message}: {detail.strip()}"
 
         return message
+
+    @staticmethod
+    def _format_stream_error(
+        event: Mapping[str, Any],
+    ) -> str:
+        error = event.get("error")
+
+        if isinstance(error, Mapping):
+            message = error.get("message")
+
+            if isinstance(message, str) and message.strip():
+                return (
+                    "OpenAI streaming failed: "
+                    f"{message.strip()}"
+                )
+
+        event_type = event.get("type")
+
+        return (
+            "OpenAI streaming failed"
+            if not isinstance(event_type, str)
+            else f"OpenAI streaming failed: {event_type}"
+        )

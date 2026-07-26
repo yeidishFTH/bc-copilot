@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import (
@@ -167,3 +168,65 @@ def test_copilot_ask_rejects_invalid_history_role() -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 422
+
+
+def test_copilot_stream_returns_ndjson_events() -> None:
+    class FakeStreamingCopilotService:
+        async def stream_answer(
+            self,
+            question: str,
+            **_: object,
+        ):
+            yield {
+                "type": "metadata",
+                "question": question,
+                "grounded": True,
+                "sources": [],
+                "context_character_count": 10,
+                "context_estimated_tokens": 3,
+                "context_truncated": False,
+            }
+            yield {
+                "type": "delta",
+                "delta": "שלום",
+            }
+            yield {
+                "type": "complete",
+                "answer": "שלום",
+                "grounded": True,
+            }
+
+    app.dependency_overrides[
+        get_copilot_answer_service
+    ] = lambda: FakeStreamingCopilotService()
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/copilot/ask/stream",
+                json={
+                    "question": "בדיקת סטרימינג",
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.headers[
+        "content-type"
+    ].startswith("application/x-ndjson")
+
+    events = [
+        json.loads(line)
+        for line in response.text.splitlines()
+        if line.strip()
+    ]
+
+    assert [
+        event["type"]
+        for event in events
+    ] == [
+        "metadata",
+        "delta",
+        "complete",
+    ]
