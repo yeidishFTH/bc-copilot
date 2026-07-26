@@ -69,6 +69,7 @@ class CopilotSourceResponse(BaseModel):
     canonical_url: str
     chunk_id: str
     rank: float
+    content: str = ""
 
 
 class CopilotAskResponse(BaseModel):

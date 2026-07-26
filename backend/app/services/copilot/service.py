@@ -85,6 +85,8 @@ class CopilotAnswerService:
                 canonical_url=source.canonical_url,
                 chunk_id=source.chunk_id,
                 rank=source.rank,
+
+                content=source.content,
             )
             for source in context.sources
         )
@@ -167,6 +169,8 @@ class CopilotAnswerService:
                 canonical_url=source.canonical_url,
                 chunk_id=source.chunk_id,
                 rank=source.rank,
+
+                content=source.content,
             )
             for source in context.sources
         )
@@ -187,6 +191,7 @@ class CopilotAnswerService:
                     ),
                     "chunk_id": source.chunk_id,
                     "rank": source.rank,
+                    "content": source.content,
                 }
                 for source in sources
             ],

@@ -21,6 +21,7 @@ class CopilotSource:
     canonical_url: str
     chunk_id: str
     rank: float
+    content: str = ""
 
 
 @dataclass(frozen=True, slots=True)

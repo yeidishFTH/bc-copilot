@@ -747,3 +747,129 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Reference UX */
+
+.source-card {
+  flex-direction: column;
+  align-items: stretch;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.source-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.source-card-expanded {
+  border-color: rgba(213, 169, 0, 0.48);
+  background: #fffdf4;
+}
+
+.source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  padding-right: 40px;
+}
+
+.source-action-button,
+.source-wiki-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.source-action-button:hover,
+.source-wiki-link:hover {
+  border-color: rgba(213, 169, 0, 0.55);
+  background: var(--yellow-soft);
+  color: #725b00;
+  text-decoration: none;
+}
+
+.source-original-content {
+  margin-top: 4px;
+  margin-right: 40px;
+  overflow: hidden;
+  border: 1px solid #e3dfd2;
+  border-radius: 12px;
+  background: #fff;
+  animation: reveal-source 180ms ease-out;
+}
+
+.source-original-heading {
+  padding: 9px 12px;
+  border-bottom: 1px solid #ece9e0;
+  background: #faf8f0;
+  color: #7a6a2b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.source-original-text {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 14px;
+  color: #34332f;
+  font-family:
+    Arial,
+    "Noto Sans Hebrew",
+    sans-serif;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+@keyframes reveal-source {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.citation:focus,
+.citation:active {
+  outline: 2px solid rgba(213, 169, 0, 0.55);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .source-actions {
+    padding-right: 0;
+  }
+
+  .source-original-content {
+    margin-right: 0;
+  }
+
+  .source-action-button,
+  .source-wiki-link {
+    flex: 1 1 auto;
+  }
+}

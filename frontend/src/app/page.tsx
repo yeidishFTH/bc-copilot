@@ -15,6 +15,7 @@ type CopilotSource = {
   canonical_url: string;
   chunk_id: string;
   rank: number;
+  content: string;
 };
 
 type CopilotResponse = {
@@ -122,28 +123,116 @@ function SourceCard({
 }: {
   source: CopilotSource;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [copyLabel, setCopyLabel] = useState(
+    "העתקת הקטע",
+  );
+
+  const sourceContent = source.content?.trim() ?? "";
+  const hasContent = sourceContent.length > 0;
+
+  async function copySource(): Promise<void> {
+    if (!hasContent) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(
+        [
+          source.title,
+          getHeading(source),
+          sourceContent,
+          source.canonical_url,
+        ].join("\n\n"),
+      );
+
+      setCopyLabel("הועתק ✓");
+
+      window.setTimeout(() => {
+        setCopyLabel("העתקת הקטע");
+      }, 1600);
+    } catch {
+      setCopyLabel("ההעתקה נכשלה");
+
+      window.setTimeout(() => {
+        setCopyLabel("העתקת הקטע");
+      }, 1600);
+    }
+  }
+
   return (
     <article
-      className="source-card"
+      className={[
+        "source-card",
+        isExpanded ? "source-card-expanded" : "",
+      ].filter(Boolean).join(" ")}
       id={`source-${source.chunk_id}`}
     >
-      <div className="source-index">
-        {source.index}
+      <div className="source-card-header">
+        <div className="source-index">
+          {source.index}
+        </div>
+
+        <div className="source-details">
+          <h4>{source.title}</h4>
+          <p>{getHeading(source)}</p>
+        </div>
       </div>
 
-      <div className="source-details">
-        <h4>{source.title}</h4>
-        <p>{getHeading(source)}</p>
+      <div className="source-actions">
+        {hasContent && (
+          <button
+            type="button"
+            className="source-action-button"
+            onClick={() => {
+              setIsExpanded((current) => !current);
+            }}
+            aria-expanded={isExpanded}
+          >
+            <span aria-hidden="true">
+              {isExpanded ? "▴" : "▾"}
+            </span>
+            {isExpanded
+              ? "הסתרת הקטע המקורי"
+              : "הצגת הקטע המקורי"}
+          </button>
+        )}
+
+        {hasContent && (
+          <button
+            type="button"
+            className="source-action-button"
+            onClick={() => {
+              void copySource();
+            }}
+          >
+            <span aria-hidden="true">⧉</span>
+            {copyLabel}
+          </button>
+        )}
 
         <a
+          className="source-wiki-link"
           href={source.canonical_url}
           target="_blank"
           rel="noreferrer"
         >
-          פתיחה בוויקי
           <span aria-hidden="true">↗</span>
+          פתיחת המסמך בוויקי
         </a>
       </div>
+
+      {isExpanded && hasContent && (
+        <div className="source-original-content">
+          <div className="source-original-heading">
+            הקטע המקורי מתוך הוויקי
+          </div>
+
+          <div className="source-original-text">
+            {sourceContent}
+          </div>
+        </div>
+      )}
     </article>
   );
 }
@@ -307,7 +396,12 @@ export default function Home() {
                 ?? normalizedQuestion
               ),
               grounded: Boolean(event.grounded),
-              sources: event.sources ?? [],
+              sources: (event.sources ?? []).map(
+                (source) => ({
+                  ...source,
+                  content: source.content ?? "",
+                }),
+              ),
               context_character_count: (
                 event.context_character_count
                 ?? 0

@@ -88,6 +88,8 @@ async def ask_copilot(
                 ),
                 chunk_id=source.chunk_id,
                 rank=source.rank,
+
+                content=source.content,
             )
             for source in result.sources
         ],

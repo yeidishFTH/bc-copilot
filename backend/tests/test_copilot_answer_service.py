@@ -358,3 +358,21 @@ async def test_answer_rejects_too_much_history() -> None:
             "שאלה נוכחית",
             history=history,
         )
+
+
+@pytest.mark.asyncio
+async def test_answer_exposes_original_source_content() -> None:
+    context = make_context()
+    context_service = FakeContextService(context)
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    result = await service.answer("שאלה")
+
+    assert result.sources
+    assert result.sources[0].content == (
+        context.sources[0].content
+    )
