@@ -5,6 +5,12 @@ from collections.abc import AsyncIterator, Sequence
 from app.services.copilot.citations import (
     CitationValidator,
 )
+from app.services.copilot.intent import (
+    IntentClassifier,
+)
+from app.services.copilot.planner import (
+    CopilotPlanner,
+)
 from app.services.copilot.models import (
     CopilotAnswer,
     CopilotConversationMessage,
@@ -41,10 +47,17 @@ class CopilotAnswerService:
         *,
         context_service: KnowledgeContextService,
         generator: TextGenerationClient,
+        intent_classifier: IntentClassifier | None = None,
+        planner: CopilotPlanner | None = None,
         citation_validator: CitationValidator | None = None,
     ) -> None:
         self._context_service = context_service
         self._generator = generator
+        self._intent_classifier = (
+            intent_classifier
+            or IntentClassifier()
+        )
+        self._planner = planner or CopilotPlanner()
         self._citation_validator = (
             citation_validator
             or CitationValidator()
@@ -56,10 +69,10 @@ class CopilotAnswerService:
         *,
         history: Sequence[CopilotConversationMessage] = (),
         namespace_ids: Sequence[int] | None = None,
-        search_limit: int = DEFAULT_SEARCH_LIMIT,
-        max_characters: int = DEFAULT_MAX_CHARACTERS,
-        max_chunks: int = DEFAULT_MAX_CHUNKS,
-        max_chunks_per_page: int = DEFAULT_MAX_CHUNKS_PER_PAGE,
+        search_limit: int | None = None,
+        max_characters: int | None = None,
+        max_chunks: int | None = None,
+        max_chunks_per_page: int | None = None,
     ) -> CopilotAnswer:
         normalized_question = self._normalize_question(question)
         normalized_history = self._normalize_history(history)
@@ -68,13 +81,39 @@ class CopilotAnswerService:
             normalized_history,
         )
 
+        classification = self._intent_classifier.classify(
+            normalized_question
+        )
+        plan = self._planner.plan(classification)
+
+        resolved_search_limit = (
+            search_limit
+            if search_limit is not None
+            else plan.search_limit
+        )
+        resolved_max_characters = (
+            max_characters
+            if max_characters is not None
+            else plan.max_characters
+        )
+        resolved_max_chunks = (
+            max_chunks
+            if max_chunks is not None
+            else plan.max_chunks
+        )
+        resolved_max_chunks_per_page = (
+            max_chunks_per_page
+            if max_chunks_per_page is not None
+            else plan.max_chunks_per_page
+        )
+
         context = await self._context_service.build_context(
             retrieval_query,
-            search_limit=search_limit,
+            search_limit=resolved_search_limit,
             namespace_ids=namespace_ids,
-            max_characters=max_characters,
-            max_chunks=max_chunks,
-            max_chunks_per_page=max_chunks_per_page,
+            max_characters=resolved_max_characters,
+            max_chunks=resolved_max_chunks,
+            max_chunks_per_page=resolved_max_chunks_per_page,
         )
 
         sources = tuple(
@@ -151,10 +190,10 @@ class CopilotAnswerService:
         *,
         history: Sequence[CopilotConversationMessage] = (),
         namespace_ids: Sequence[int] | None = None,
-        search_limit: int = DEFAULT_SEARCH_LIMIT,
-        max_characters: int = DEFAULT_MAX_CHARACTERS,
-        max_chunks: int = DEFAULT_MAX_CHUNKS,
-        max_chunks_per_page: int = DEFAULT_MAX_CHUNKS_PER_PAGE,
+        search_limit: int | None = None,
+        max_characters: int | None = None,
+        max_chunks: int | None = None,
+        max_chunks_per_page: int | None = None,
     ) -> AsyncIterator[dict[str, object]]:
         normalized_question = self._normalize_question(question)
         normalized_history = self._normalize_history(history)
@@ -163,13 +202,39 @@ class CopilotAnswerService:
             normalized_history,
         )
 
+        classification = self._intent_classifier.classify(
+            normalized_question
+        )
+        plan = self._planner.plan(classification)
+
+        resolved_search_limit = (
+            search_limit
+            if search_limit is not None
+            else plan.search_limit
+        )
+        resolved_max_characters = (
+            max_characters
+            if max_characters is not None
+            else plan.max_characters
+        )
+        resolved_max_chunks = (
+            max_chunks
+            if max_chunks is not None
+            else plan.max_chunks
+        )
+        resolved_max_chunks_per_page = (
+            max_chunks_per_page
+            if max_chunks_per_page is not None
+            else plan.max_chunks_per_page
+        )
+
         context = await self._context_service.build_context(
             retrieval_query,
-            search_limit=search_limit,
+            search_limit=resolved_search_limit,
             namespace_ids=namespace_ids,
-            max_characters=max_characters,
-            max_chunks=max_chunks,
-            max_chunks_per_page=max_chunks_per_page,
+            max_characters=resolved_max_characters,
+            max_chunks=resolved_max_chunks,
+            max_chunks_per_page=resolved_max_chunks_per_page,
         )
 
         sources = tuple(

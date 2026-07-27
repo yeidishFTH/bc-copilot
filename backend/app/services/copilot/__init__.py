@@ -20,6 +20,16 @@ from app.services.copilot.providers import (
 from app.services.copilot.service import CopilotAnswerService
 
 __all__ = [
+    "MultiQueryKnowledgeContextService",
+    "MultiQuerySearchReader",
+    "KnowledgeQueryRetriever",
+    "MultiQueryRetrievalResult",
+    "MultiQueryRetrievalService",
+    "QueryRewrite",
+    "QueryRewriter",
+    "CopilotPlanner",
+    "RetrievalPlan",
+    "RetrievalStrategy",
     "OpenAITextGenerationClient",
     "OpenAIResponseError",
     "OpenAIConfigurationError",
@@ -33,3 +43,25 @@ __all__ = [
     "TextGenerationClient",
     "build_user_prompt",
 ]
+
+from app.services.copilot.planner import (
+    CopilotPlanner,
+    RetrievalPlan,
+    RetrievalStrategy,
+)
+
+from app.services.copilot.query_rewriter import (
+    QueryRewrite,
+    QueryRewriter,
+)
+
+from app.services.copilot.multi_query_retrieval import (
+    KnowledgeQueryRetriever,
+    MultiQueryRetrievalResult,
+    MultiQueryRetrievalService,
+)
+
+from app.services.copilot.multi_query_context import (
+    MultiQueryKnowledgeContextService,
+    MultiQuerySearchReader,
+)

@@ -376,3 +376,70 @@ async def test_answer_exposes_original_source_content() -> None:
     assert result.sources[0].content == (
         context.sources[0].content
     )
+
+
+@pytest.mark.asyncio
+async def test_answer_uses_planner_defaults() -> None:
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    await service.answer(
+        "איפה כתוב שצריך לקבל בקשה במייל?"
+    )
+
+    call = context_service.calls[-1]
+
+    assert call["search_limit"] == 14
+    assert call["max_characters"] == 7_000
+    assert call["max_chunks"] == 4
+    assert call["max_chunks_per_page"] == 2
+
+
+@pytest.mark.asyncio
+async def test_explicit_retrieval_values_override_planner() -> None:
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    await service.answer(
+        "איפה כתוב שצריך לקבל בקשה במייל?",
+        search_limit=42,
+        max_characters=18_000,
+        max_chunks=11,
+        max_chunks_per_page=5,
+    )
+
+    call = context_service.calls[-1]
+
+    assert call["search_limit"] == 42
+    assert call["max_characters"] == 18_000
+    assert call["max_chunks"] == 11
+    assert call["max_chunks_per_page"] == 5
+
+
+@pytest.mark.asyncio
+async def test_summary_uses_broad_retrieval_plan() -> None:
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator()
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    await service.answer(
+        "סכם לי את נוהל מחיקת כרטיס הלקוח"
+    )
+
+    call = context_service.calls[-1]
+
+    assert call["search_limit"] == 45
+    assert call["max_characters"] == 22_000
+    assert call["max_chunks"] == 15
+    assert call["max_chunks_per_page"] == 8

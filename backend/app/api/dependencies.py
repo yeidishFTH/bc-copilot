@@ -7,6 +7,8 @@ from app.core.config import get_settings
 from app.db.session import get_db_session
 from app.services.copilot import (
     CopilotAnswerService,
+    MultiQueryKnowledgeContextService,
+    MultiQueryRetrievalService,
     OpenAITextGenerationClient,
 )
 from app.services.knowledge.persistence import (
@@ -52,8 +54,15 @@ def get_copilot_answer_service(
     retrieval_service = KnowledgeRetrievalService(
         search_repository
     )
-    context_service = KnowledgeContextService(
-        retrieval_service
+    multi_query_retrieval = (
+        MultiQueryRetrievalService(
+            retrieval_service
+        )
+    )
+    context_service = (
+        MultiQueryKnowledgeContextService(
+            multi_query_retrieval
+        )
     )
     generator = OpenAITextGenerationClient(
         api_key=api_key,
