@@ -1,0 +1,84 @@
+[
+  {
+    "id": "delete-customer",
+    "question": "איך מוחקים לקוח?",
+    "expected_titles": [
+      "נוהל מחיקת כרטיס לקוח"
+    ],
+    "notes": "שאלת משתמש טבעית שאינה כוללת את שם הנוהל המדויק."
+  },
+  {
+    "id": "identify-customer",
+    "question": "איך מזהים לקוח?",
+    "expected_titles": [
+      "נוהל זיהוי ואימות לקוח"
+    ],
+    "notes": "בדיקת הרחבה מזיהוי טבעי לשם נוהל רשמי."
+  },
+  {
+    "id": "close-day",
+    "question": "איך סוגרים יום?",
+    "expected_titles": [
+      "נוהל סגירת יום"
+    ],
+    "notes": "בדיקת הטיית פועל בעברית."
+  },
+  {
+    "id": "create-transaction",
+    "question": "איך מבצעים עסקה?",
+    "expected_titles": [
+      "יצירת עסקה"
+    ],
+    "notes": "בדיקת הרחבה מביצוע עסקה ליצירת עסקה."
+  },
+  {
+    "id": "contact-compliance",
+    "question": "מתי פונים לקצין ציות?",
+    "expected_titles": [
+      "נוהל התקשרות עם מחלקת ציות"
+    ],
+    "notes": "בדיקת alias בין קצין ציות למחלקת ציות."
+  },
+  {
+    "id": "salesforce",
+    "question": "איך עובדים עם Salesforce?",
+    "expected_titles": [
+      "מערכת Salesforce"
+    ],
+    "notes": "בדיקת שם מערכת ומונח CRM."
+  },
+  {
+    "id": "foreign-customer",
+    "question": "איך מטפלים בלקוח זר?",
+    "expected_titles": [
+      "נוהל זיהוי ואימות לקוח"
+    ],
+    "notes": "הדף 'דגשים בעת רישום לקוחות זרים' אינו קיים בוויקי. המידע הקיים על זיהוי לקוח זר ודרכון נמצא כיום בנוהל זיהוי ואימות לקוח."
+  },
+  {
+    "id": "atm-general",
+    "question": "מה עושים בכספומט?",
+    "expected_titles": [
+      "נוהל מכירת USDT ERC-20 וטיפול בתקלות",
+      "מערכת Salesforce"
+    ],
+    "preferred_title": "נוהל מכירת USDT ERC-20 וטיפול בתקלות",
+    "notes": "שאלה רחבה. אחד משני המסמכים עשוי להיות רלוונטי, אך הנוהל התפעולי מועדף במקום הראשון."
+  },
+  {
+    "id": "identity-source",
+    "question": "איפה כתוב שצריך לזהות לקוח?",
+    "expected_titles": [
+      "נוהל זיהוי ואימות לקוח"
+    ],
+    "notes": "בדיקת Intent של citation יחד עם Query Rewrite."
+  },
+  {
+    "id": "delete-summary",
+    "question": "סכם לי את תהליך מחיקת הלקוח",
+    "expected_titles": [
+      "נוהל מחיקת כרטיס לקוח"
+    ],
+    "notes": "בדיקת Intent של summary עם חיפוש רחב."
+  }
+]

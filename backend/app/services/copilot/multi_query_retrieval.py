@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from typing import Protocol, runtime_checkable
@@ -45,6 +47,7 @@ class _AggregatedCandidate:
     hit_count: int
     first_query_index: int
     appeared_in_original_query: bool
+    query_match_bonus: float
 
 
 class MultiQueryRetrievalService:
@@ -72,6 +75,49 @@ class MultiQueryRetrievalService:
     ORIGINAL_QUERY_BONUS = 0.20
     METADATA_BONUS = 0.10
     EARLY_QUERY_BONUS = 0.04
+
+    EXACT_TITLE_MATCH_BONUS = 3.00
+    TITLE_PHRASE_MATCH_BONUS = 2.20
+    HIGH_TITLE_COVERAGE_BONUS = 1.50
+    MEDIUM_TITLE_COVERAGE_BONUS = 0.80
+    HEADING_PHRASE_MATCH_BONUS = 0.70
+    CONTENT_PHRASE_MATCH_BONUS = 0.35
+
+    APPROVED_STATUS_BONUS = 0.35
+    PROCEDURE_DOCUMENT_BONUS = 0.75
+    TRAINING_DOCUMENT_BONUS = 0.25
+    SYSTEM_GUIDE_DOCUMENT_BONUS = 0.15
+
+    _TOKEN_PATTERN = re.compile(
+        r"[א-תA-Za-z0-9׳']+"
+    )
+
+    _QUERY_STOP_WORDS = frozenset(
+        {
+            "איך",
+            "מה",
+            "מהו",
+            "מהי",
+            "מהם",
+            "מהן",
+            "עושים",
+            "עושה",
+            "צריך",
+            "צריכים",
+            "אפשר",
+            "יש",
+            "של",
+            "את",
+            "עם",
+            "על",
+            "לפי",
+            "מתי",
+            "איפה",
+            "כתוב",
+            "לי",
+            "בבקשה",
+        }
+    )
 
     def __init__(
         self,
@@ -160,6 +206,12 @@ class MultiQueryRetrievalService:
                             appeared_in_original_query=(
                                 query_index == 0
                             ),
+                            query_match_bonus=(
+                                self._query_match_bonus(
+                                    result,
+                                    search_query,
+                                )
+                            ),
                         )
                     )
                     continue
@@ -172,6 +224,13 @@ class MultiQueryRetrievalService:
                 candidate.appeared_in_original_query = (
                     candidate.appeared_in_original_query
                     or query_index == 0
+                )
+                candidate.query_match_bonus = max(
+                    candidate.query_match_bonus,
+                    self._query_match_bonus(
+                        result,
+                        search_query,
+                    ),
                 )
 
                 if result.rank > candidate.result.rank:
@@ -224,13 +283,155 @@ class MultiQueryRetrievalService:
             0.0,
         )
 
+        authority_bonus = (
+            cls._document_authority_bonus(
+                candidate.result
+            )
+        )
+
         return round(
             candidate.best_rank
             + repeated_bonus
             + original_bonus
             + metadata_bonus
-            + early_query_bonus,
+            + early_query_bonus
+            + candidate.query_match_bonus
+            + authority_bonus,
             6,
+        )
+
+    @classmethod
+    def _query_match_bonus(
+        cls,
+        result: KnowledgeSearchResult,
+        query: str,
+    ) -> float:
+        normalized_query = cls._normalize_match_text(
+            query
+        )
+        normalized_title = cls._normalize_match_text(
+            result.title
+        )
+
+        if not normalized_query:
+            return 0.0
+
+        title_bonus = 0.0
+
+        if normalized_title == normalized_query:
+            title_bonus = cls.EXACT_TITLE_MATCH_BONUS
+        elif (
+            len(normalized_query) >= 4
+            and normalized_query in normalized_title
+        ):
+            title_bonus = cls.TITLE_PHRASE_MATCH_BONUS
+        else:
+            query_terms = cls._meaningful_terms(
+                normalized_query
+            )
+            title_terms = cls._meaningful_terms(
+                normalized_title
+            )
+
+            if query_terms:
+                coverage = (
+                    len(query_terms.intersection(title_terms))
+                    / len(query_terms)
+                )
+
+                if coverage >= 0.8:
+                    title_bonus = (
+                        cls.HIGH_TITLE_COVERAGE_BONUS
+                    )
+                elif coverage >= 0.5:
+                    title_bonus = (
+                        cls.MEDIUM_TITLE_COVERAGE_BONUS
+                    )
+
+        heading_text = cls._normalize_match_text(
+            " ".join(result.heading_path)
+        )
+        content_text = cls._normalize_match_text(
+            result.content
+        )
+
+        phrase_bonus = 0.0
+
+        if (
+            len(normalized_query) >= 3
+            and normalized_query in heading_text
+        ):
+            phrase_bonus = max(
+                phrase_bonus,
+                cls.HEADING_PHRASE_MATCH_BONUS,
+            )
+
+        if (
+            3 <= len(normalized_query) <= 100
+            and normalized_query in content_text
+        ):
+            phrase_bonus = max(
+                phrase_bonus,
+                cls.CONTENT_PHRASE_MATCH_BONUS,
+            )
+
+        return title_bonus + phrase_bonus
+
+    @classmethod
+    def _document_authority_bonus(
+        cls,
+        result: KnowledgeSearchResult,
+    ) -> float:
+        bonus = 0.0
+
+        normalized_status = cls._normalize_match_text(
+            result.status or ""
+        )
+        normalized_type = cls._normalize_match_text(
+            result.document_type or ""
+        )
+
+        if normalized_status in {
+            "מאושר",
+            "מאושר לפרסום",
+            "פעיל",
+        }:
+            bonus += cls.APPROVED_STATUS_BONUS
+
+        if normalized_type.startswith("נוהל"):
+            bonus += cls.PROCEDURE_DOCUMENT_BONUS
+        elif normalized_type in {
+            "הדרכה",
+            "מדריך",
+        }:
+            bonus += cls.TRAINING_DOCUMENT_BONUS
+        elif normalized_type == "מדריך מערכת":
+            bonus += cls.SYSTEM_GUIDE_DOCUMENT_BONUS
+
+        return bonus
+
+    @classmethod
+    def _meaningful_terms(
+        cls,
+        value: str,
+    ) -> frozenset[str]:
+        return frozenset(
+            token
+            for token in cls._TOKEN_PATTERN.findall(
+                value
+            )
+            if (
+                len(token) >= 2
+                and token not in cls._QUERY_STOP_WORDS
+            )
+        )
+
+    @staticmethod
+    def _normalize_match_text(
+        value: str,
+    ) -> str:
+        return " ".join(
+            value.casefold().split()
         )
 
     @classmethod

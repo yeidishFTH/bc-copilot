@@ -313,3 +313,110 @@ def replace_rank(
         result,
         rank=rank,
     )
+
+
+@pytest.mark.asyncio
+async def test_exact_title_match_can_outrank_higher_raw_rank() -> None:
+    title_match = make_result(
+        chunk_id="title-match",
+        title="דגשים בעת רישום לקוחות זרים",
+        rank=2.0,
+    )
+    generic = make_result(
+        chunk_id="generic",
+        title="נוהל בקרה וביקורת",
+        rank=3.2,
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "איך מטפלים בלקוח זר?": (
+                generic,
+            ),
+            "לקוחות זרים": (
+                generic,
+            ),
+            "דגשים בעת רישום לקוחות זרים": (
+                title_match,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "איך מטפלים בלקוח זר?",
+        max_queries=3,
+    )
+
+    assert result.results[0].chunk_id == "title-match"
+
+
+@pytest.mark.asyncio
+async def test_procedure_document_receives_authority_bonus() -> None:
+    guide = make_result(
+        chunk_id="guide",
+        title="מערכת Salesforce",
+        rank=3.0,
+        document_type="מדריך מערכת",
+    )
+    procedure = make_result(
+        chunk_id="procedure",
+        title="נוהל מכירת USDT ERC-20 וטיפול בתקלות",
+        rank=3.0,
+        document_type="נוהל",
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "Lamassu": (
+                guide,
+                procedure,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "Lamassu",
+        max_queries=1,
+    )
+
+    assert result.results[0].chunk_id == "procedure"
+    assert (
+        result.results[0].rank
+        > result.results[1].rank
+    )
+
+
+@pytest.mark.asyncio
+async def test_title_phrase_match_adds_ranking_bonus() -> None:
+    matching = make_result(
+        chunk_id="matching",
+        title="נוהל מחיקת כרטיס לקוח",
+        rank=2.0,
+    )
+    unrelated = make_result(
+        chunk_id="unrelated",
+        title="מסמך כללי",
+        rank=2.5,
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "מחיקת כרטיס לקוח": (
+                unrelated,
+                matching,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "מחיקת כרטיס לקוח",
+        max_queries=1,
+    )
+
+    assert result.results[0].chunk_id == "matching"
