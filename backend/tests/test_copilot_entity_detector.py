@@ -204,3 +204,27 @@ def test_rejects_non_string_text(
         match="text must be a string",
     ):
         detector.detect(123)  # type: ignore[arg-type]
+
+
+def test_detects_salesforce_from_hebrew_spelling_and_accounts(
+    detector: EntityDetector,
+) -> None:
+    detection = detector.detect(
+        "איך עובדים עם Accounts בסיילספורס?"
+    )
+
+    assert detection.contains(
+        CopilotEntity.SALESFORCE
+    )
+
+
+def test_detects_branch_opening_from_morning_shift(
+    detector: EntityDetector,
+) -> None:
+    detection = detector.detect(
+        "מהן המשימות בתחילת משמרת בוקר?"
+    )
+
+    assert detection.contains(
+        CopilotEntity.BRANCH_OPENING
+    )

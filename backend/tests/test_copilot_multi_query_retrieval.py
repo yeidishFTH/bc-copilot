@@ -420,3 +420,149 @@ async def test_title_phrase_match_adds_ranking_bonus() -> None:
     )
 
     assert result.results[0].chunk_id == "matching"
+
+
+@pytest.mark.asyncio
+async def test_overview_query_prefers_knowledge_page_over_procedure() -> None:
+    overview = make_result(
+        chunk_id="overview",
+        title="ציות ורגולציה",
+        rank=2.2,
+        document_type="פורטל",
+    )
+    procedure = make_result(
+        chunk_id="procedure",
+        title="נוהל התקשרות עם מחלקת ציות",
+        rank=4.3,
+        document_type="נוהל",
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "מה המשמעות של ציות ורגולציה?": (
+                procedure,
+                overview,
+            ),
+            "ציות ורגולציה": (
+                procedure,
+                overview,
+            ),
+            "מחלקת ציות": (
+                procedure,
+            ),
+            "AML": (
+                procedure,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "מה המשמעות של ציות ורגולציה?",
+        max_queries=4,
+    )
+
+    assert result.results[0].chunk_id == "overview"
+
+
+@pytest.mark.asyncio
+async def test_procedure_query_still_prefers_procedure() -> None:
+    overview = make_result(
+        chunk_id="overview",
+        title="ציות ורגולציה",
+        rank=3.0,
+        document_type="פורטל",
+    )
+    procedure = make_result(
+        chunk_id="procedure",
+        title="נוהל התקשרות עם מחלקת ציות",
+        rank=3.0,
+        document_type="נוהל",
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "איך פונים למחלקת ציות?": (
+                overview,
+                procedure,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "איך פונים למחלקת ציות?",
+        max_queries=1,
+    )
+
+    assert result.results[0].chunk_id == "procedure"
+
+
+@pytest.mark.asyncio
+async def test_system_query_prefers_system_document() -> None:
+    system_document = make_result(
+        chunk_id="system",
+        title="מערכת Salesforce",
+        rank=2.5,
+        document_type="מדריך מערכת",
+    )
+    generic_document = make_result(
+        chunk_id="generic",
+        title="נוהל הקמת סניף",
+        rank=2.8,
+        document_type="נוהל",
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "איפה רואים לקוח במערכת Salesforce?": (
+                generic_document,
+                system_document,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "איפה רואים לקוח במערכת Salesforce?",
+        max_queries=1,
+    )
+
+    assert result.results[0].chunk_id == "system"
+
+
+@pytest.mark.asyncio
+async def test_checklist_query_prefers_checklist_document() -> None:
+    checklist = make_result(
+        chunk_id="checklist",
+        title="צ'קליסט פתיחת ותחזוקת סניף",
+        rank=2.5,
+        document_type="צ'קליסט",
+    )
+    procedure = make_result(
+        chunk_id="procedure",
+        title="נוהל בקרה וביקורת",
+        rank=2.8,
+        document_type="נוהל",
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "מהן המשימות בתחילת משמרת בוקר?": (
+                procedure,
+                checklist,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "מהן המשימות בתחילת משמרת בוקר?",
+        max_queries=1,
+    )
+
+    assert result.results[0].chunk_id == "checklist"

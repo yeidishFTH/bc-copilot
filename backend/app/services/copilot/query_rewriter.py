@@ -255,18 +255,26 @@ class QueryRewriter:
                 frozenset(
                     {
                         "salesforce",
+                        "סיילספורס",
                         "crm",
+                        "accounts",
+                        "account",
                     }
                 ),
             ),
             phrases=(
                 "מערכת לקוחות",
                 "מערכת salesforce",
+                "מערכת סיילספורס",
+                "סיילספורס",
+                "accounts",
+                "account",
             ),
             expansions=(
                 "מערכת Salesforce",
                 "Salesforce",
                 "CRM",
+                "Accounts",
             ),
         ),
         _AliasRule(
@@ -316,6 +324,10 @@ class QueryRewriter:
                 "משימות פתיחה",
                 "משימות הפתיחה",
                 "פותחים סניף",
+                "תחילת משמרת בוקר",
+                "משמרת בוקר",
+                "בתחילת משמרת",
+                "תחילת המשמרת",
             ),
             expansions=(
                 "פתיחת סניף",
@@ -516,6 +528,46 @@ class QueryRewriter:
                 >= self.MAX_SEARCH_QUERIES
             ):
                 break
+
+        overview_signals = (
+            "מה המשמעות של",
+            "מה המשמעות",
+            "מה זה",
+            "מהי",
+            "מהו",
+            "הסבר",
+            "הסבירו",
+            "סקירה",
+            "רקע על",
+        )
+
+        is_overview_query = any(
+            signal in normalized_casefold
+            for signal in overview_signals
+        )
+
+        if (
+            is_overview_query
+            and CopilotEntity.COMPLIANCE
+            in entity_detection.entity_ids
+        ):
+            procedure_title = (
+                "נוהל התקשרות עם מחלקת ציות"
+            )
+            overview_title = "ציות ורגולציה"
+
+            search_queries = [
+                item
+                for item in search_queries
+                if item.casefold()
+                != procedure_title.casefold()
+            ]
+
+            search_queries = [
+                search_queries[0],
+                overview_title,
+                *search_queries[1:],
+            ]
 
         search_queries = list(
             dict.fromkeys(search_queries)

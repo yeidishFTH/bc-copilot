@@ -285,15 +285,22 @@ class EntityDetector:
             entity=CopilotEntity.SALESFORCE,
             phrases=(
                 "salesforce",
+                "סיילספורס",
                 "מערכת salesforce",
+                "מערכת סיילספורס",
                 "מערכת לקוחות",
                 "crm",
+                "accounts",
+                "account",
             ),
             token_groups=(
                 frozenset(
                     {
                         "salesforce",
+                        "סיילספורס",
                         "crm",
+                        "accounts",
+                        "account",
                     }
                 ),
             ),
@@ -406,6 +413,10 @@ class EntityDetector:
                 "משימות הפתיחה",
                 "פותחים סניף",
                 "פתיחת משמרת",
+                "תחילת משמרת בוקר",
+                "משמרת בוקר",
+                "בתחילת משמרת",
+                "תחילת המשמרת",
             ),
             token_groups=(
                 frozenset(

@@ -80,5 +80,167 @@
       "נוהל מחיקת כרטיס לקוח"
     ],
     "notes": "בדיקת Intent של summary עם חיפוש רחב."
+  },
+  {
+    "id": "delete-customer-salesforce",
+    "question": "איך מוחקים כרטיס לקוח בסיילספורס?",
+    "expected_titles": [
+      "נוהל מחיקת כרטיס לקוח"
+    ],
+    "notes": "ניסוח המשלב פעולה ומערכת. הנוהל התפעולי צריך לקבל עדיפות."
+  },
+  {
+    "id": "delete-account",
+    "question": "מה התהליך למחיקת חשבון של לקוח?",
+    "expected_titles": [
+      "נוהל מחיקת כרטיס לקוח"
+    ],
+    "notes": "Alias בין חשבון לקוח לכרטיס לקוח."
+  },
+  {
+    "id": "passport-requirements",
+    "question": "איזה מסמכים צריך לקבל מלקוח עם דרכון?",
+    "expected_titles": [
+      "נוהל זיהוי ואימות לקוח"
+    ],
+    "notes": "זיהוי entity של passport ולקוח."
+  },
+  {
+    "id": "foreign-resident",
+    "question": "איך מזהים תושב חוץ?",
+    "expected_titles": [
+      "נוהל זיהוי ואימות לקוח"
+    ],
+    "notes": "ניסוח חלופי ללקוח זר."
+  },
+  {
+    "id": "id-document-photo",
+    "question": "מתי צריך צילום של תעודת זהות?",
+    "expected_titles": [
+      "נוהל זיהוי ואימות לקוח"
+    ],
+    "notes": "Entity של מסמך מזהה ו-KYC."
+  },
+  {
+    "id": "kyc-general",
+    "question": "מה עושים בתהליך KYC?",
+    "expected_titles": [
+      "נוהל זיהוי ואימות לקוח"
+    ],
+    "notes": "שימוש ישיר במונח האנגלי KYC."
+  },
+  {
+    "id": "compliance-contact",
+    "question": "איך יוצרים קשר עם מחלקת הציות?",
+    "expected_titles": [
+      "נוהל התקשרות עם מחלקת ציות"
+    ],
+    "notes": "חיפוש ישיר של נוהל ההתקשרות."
+  },
+  {
+    "id": "aml-escalation",
+    "question": "למי פונים כשיש חשש להלבנת הון?",
+    "expected_titles": [
+      "נוהל התקשרות עם מחלקת ציות",
+      "ציות ורגולציה"
+    ],
+    "preferred_title": "נוהל התקשרות עם מחלקת ציות",
+    "notes": "AML עם העדפה לנוהל פעולה."
+  },
+  {
+    "id": "compliance-overview",
+    "question": "מה המשמעות של ציות ורגולציה?",
+    "expected_titles": [
+      "ציות ורגולציה"
+    ],
+    "notes": "שאלת ידע כללית ולא נוהל ביצוע."
+  },
+  {
+    "id": "salesforce-customer-card",
+    "question": "איפה רואים את כרטיס הלקוח ב-CRM?",
+    "expected_titles": [
+      "מערכת Salesforce"
+    ],
+    "notes": "Alias בין CRM ל-Salesforce."
+  },
+  {
+    "id": "salesforce-accounts",
+    "question": "איך עובדים עם Accounts בסיילספורס?",
+    "expected_titles": [
+      "מערכת Salesforce"
+    ],
+    "notes": "מונח מערכת באנגלית."
+  },
+  {
+    "id": "atm-lamassu-fault",
+    "question": "מה עושים כשיש תקלה ב-Lamassu?",
+    "expected_titles": [
+      "נוהל מכירת USDT ERC-20 וטיפול בתקלות"
+    ],
+    "notes": "Entity של Lamassu יחד עם תקלה."
+  },
+  {
+    "id": "usdt-atm-sale",
+    "question": "איך מוכרים USDT דרך הכספומט?",
+    "expected_titles": [
+      "נוהל מכירת USDT ERC-20 וטיפול בתקלות"
+    ],
+    "notes": "USDT, כספומט ופעולת מכירה."
+  },
+  {
+    "id": "erc20-procedure",
+    "question": "מה הנוהל לעסקת ERC-20?",
+    "expected_titles": [
+      "נוהל מכירת USDT ERC-20 וטיפול בתקלות"
+    ],
+    "notes": "חיפוש באמצעות סוג הרשת בלבד."
+  },
+  {
+    "id": "branch-opening-checklist",
+    "question": "מה צריך לעשות בפתיחת הסניף?",
+    "expected_titles": [
+      "צ'קליסט פתיחת ותחזוקת סניף"
+    ],
+    "notes": "Entity של branch_opening."
+  },
+  {
+    "id": "opening-shift",
+    "question": "מהן המשימות בתחילת משמרת בוקר?",
+    "expected_titles": [
+      "צ'קליסט פתיחת ותחזוקת סניף"
+    ],
+    "notes": "ניסוח טבעי שאינו משתמש בשם המסמך."
+  },
+  {
+    "id": "end-of-day-count",
+    "question": "איך מבצעים ספירה סופית בסוף היום?",
+    "expected_titles": [
+      "נוהל סגירת יום"
+    ],
+    "notes": "Entity של cash_count ו-day_closing."
+  },
+  {
+    "id": "close-branch",
+    "question": "מהן הפעולות לסגירת הסניף?",
+    "expected_titles": [
+      "נוהל סגירת יום"
+    ],
+    "notes": "ניסוח חלופי לסגירת יום."
+  },
+  {
+    "id": "whatsapp-response",
+    "question": "איך עונים ללקוח בשיחת WhatsApp?",
+    "expected_titles": [
+      "נוהל מענה שיחות WhatsApp"
+    ],
+    "notes": "Entity של WhatsApp ולקוח."
+  },
+  {
+    "id": "new-employee-onboarding",
+    "question": "מה התהליך לקליטת עובד חדש?",
+    "expected_titles": [
+      "נוהל קליטת עובד"
+    ],
+    "notes": "חיפוש נוהל משאבי אנוש."
   }
 ]

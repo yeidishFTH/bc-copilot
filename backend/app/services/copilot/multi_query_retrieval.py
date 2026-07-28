@@ -48,6 +48,7 @@ class _AggregatedCandidate:
     first_query_index: int
     appeared_in_original_query: bool
     query_match_bonus: float
+    semantic_mode_bonus: float
 
 
 class MultiQueryRetrievalService:
@@ -87,6 +88,61 @@ class MultiQueryRetrievalService:
     PROCEDURE_DOCUMENT_BONUS = 0.75
     TRAINING_DOCUMENT_BONUS = 0.25
     SYSTEM_GUIDE_DOCUMENT_BONUS = 0.15
+
+    OVERVIEW_EXACT_TITLE_BONUS = 4.00
+    OVERVIEW_HIGH_TITLE_COVERAGE_BONUS = 2.20
+    OVERVIEW_KNOWLEDGE_DOCUMENT_BONUS = 1.20
+    OVERVIEW_PROCEDURE_PENALTY = 1.50
+
+    PROCEDURE_QUERY_PROCEDURE_BONUS = 0.90
+    SYSTEM_QUERY_SYSTEM_GUIDE_BONUS = 0.90
+    CHECKLIST_QUERY_CHECKLIST_BONUS = 1.50
+    CHECKLIST_QUERY_PROCEDURE_PENALTY = 0.40
+
+    _OVERVIEW_SIGNALS = (
+        "מה המשמעות של",
+        "מה המשמעות",
+        "מה זה",
+        "מהי",
+        "מהו",
+        "הסבר",
+        "תסביר",
+        "סקירה",
+        "רקע על",
+        "מידע על",
+    )
+
+    _PROCEDURE_SIGNALS = (
+        "איך",
+        "מה עושים",
+        "מה צריך לעשות",
+        "מה התהליך",
+        "שלבים",
+        "נוהל",
+        "לבצע",
+        "מבצעים",
+        "לטפל",
+        "מטפלים",
+    )
+
+    _SYSTEM_SIGNALS = (
+        "במערכת",
+        "מערכת",
+        "salesforce",
+        "סיילספורס",
+        "crm",
+        "accounts",
+        "account",
+    )
+
+    _CHECKLIST_SIGNALS = (
+        "צ'קליסט",
+        "צ׳קליסט",
+        "משימות",
+        "פתיחת משמרת",
+        "תחילת משמרת",
+        "משמרת בוקר",
+    )
 
     _TOKEN_PATTERN = re.compile(
         r"[א-תA-Za-z0-9׳']+"
@@ -212,6 +268,12 @@ class MultiQueryRetrievalService:
                                     search_query,
                                 )
                             ),
+                            semantic_mode_bonus=(
+                                self._semantic_mode_bonus(
+                                    result,
+                                    query,
+                                )
+                            ),
                         )
                     )
                     continue
@@ -235,6 +297,12 @@ class MultiQueryRetrievalService:
 
                 if result.rank > candidate.result.rank:
                     candidate.result = result
+                    candidate.semantic_mode_bonus = (
+                        self._semantic_mode_bonus(
+                            result,
+                            query,
+                        )
+                    )
 
         ranked_results = tuple(
             replace(
@@ -296,8 +364,141 @@ class MultiQueryRetrievalService:
             + metadata_bonus
             + early_query_bonus
             + candidate.query_match_bonus
+            + candidate.semantic_mode_bonus
             + authority_bonus,
             6,
+        )
+
+    @classmethod
+    def _semantic_mode_bonus(
+        cls,
+        result: KnowledgeSearchResult,
+        original_query: str,
+    ) -> float:
+        normalized_query = cls._normalize_match_text(
+            original_query
+        )
+        normalized_title = cls._normalize_match_text(
+            result.title
+        )
+        normalized_type = cls._normalize_match_text(
+            result.document_type or ""
+        )
+
+        if cls._contains_signal(
+            normalized_query,
+            cls._OVERVIEW_SIGNALS,
+        ):
+            return cls._overview_mode_bonus(
+                result=result,
+                normalized_query=normalized_query,
+                normalized_title=normalized_title,
+                normalized_type=normalized_type,
+            )
+
+        if cls._contains_signal(
+            normalized_query,
+            cls._CHECKLIST_SIGNALS,
+        ):
+            if (
+                "צ'קליסט" in normalized_title
+                or "צ׳קליסט" in normalized_title
+                or normalized_type == "צ'קליסט"
+                or normalized_type == "צ׳קליסט"
+            ):
+                return (
+                    cls.CHECKLIST_QUERY_CHECKLIST_BONUS
+                )
+
+            if normalized_type.startswith("נוהל"):
+                return -(
+                    cls.CHECKLIST_QUERY_PROCEDURE_PENALTY
+                )
+
+        if cls._contains_signal(
+            normalized_query,
+            cls._SYSTEM_SIGNALS,
+        ):
+            if (
+                normalized_type == "מדריך מערכת"
+                or normalized_type == "מערכת"
+                or normalized_title.startswith("מערכת ")
+            ):
+                return (
+                    cls.SYSTEM_QUERY_SYSTEM_GUIDE_BONUS
+                )
+
+        if cls._contains_signal(
+            normalized_query,
+            cls._PROCEDURE_SIGNALS,
+        ):
+            if normalized_type.startswith("נוהל"):
+                return (
+                    cls.PROCEDURE_QUERY_PROCEDURE_BONUS
+                )
+
+        return 0.0
+
+    @classmethod
+    def _overview_mode_bonus(
+        cls,
+        *,
+        result: KnowledgeSearchResult,
+        normalized_query: str,
+        normalized_title: str,
+        normalized_type: str,
+    ) -> float:
+        bonus = 0.0
+
+        query_terms = cls._meaningful_terms(
+            normalized_query
+        )
+        title_terms = cls._meaningful_terms(
+            normalized_title
+        )
+
+        if normalized_title == normalized_query:
+            bonus += cls.OVERVIEW_EXACT_TITLE_BONUS
+        elif normalized_title in normalized_query:
+            bonus += cls.OVERVIEW_EXACT_TITLE_BONUS
+        elif query_terms:
+            coverage = (
+                len(query_terms.intersection(title_terms))
+                / len(query_terms)
+            )
+
+            if coverage >= 0.65:
+                bonus += (
+                    cls.OVERVIEW_HIGH_TITLE_COVERAGE_BONUS
+                )
+
+        if (
+            normalized_type in {
+                "ידע ארגוני",
+                "פורטל",
+                "אחר",
+            }
+            or normalized_title in {
+                "ציות ורגולציה",
+            }
+        ):
+            bonus += (
+                cls.OVERVIEW_KNOWLEDGE_DOCUMENT_BONUS
+            )
+
+        if normalized_type.startswith("נוהל"):
+            bonus -= cls.OVERVIEW_PROCEDURE_PENALTY
+
+        return bonus
+
+    @staticmethod
+    def _contains_signal(
+        value: str,
+        signals: tuple[str, ...],
+    ) -> bool:
+        return any(
+            signal in value
+            for signal in signals
         )
 
     @classmethod

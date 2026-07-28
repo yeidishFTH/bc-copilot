@@ -340,3 +340,57 @@ def test_entity_expansions_respect_final_query_limit(
             for query in result.search_queries
         }
     ) == len(result.search_queries)
+
+
+def test_compliance_overview_prioritizes_knowledge_page(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "מה המשמעות של ציות ורגולציה?"
+    )
+
+    assert result.search_queries[1] == (
+        "ציות ורגולציה"
+    )
+
+    assert (
+        "נוהל התקשרות עם מחלקת ציות"
+        not in result.search_queries
+    )
+
+
+def test_salesforce_accounts_adds_system_queries(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "איך עובדים עם Accounts בסיילספורס?"
+    )
+
+    assert (
+        "מערכת Salesforce"
+        in result.search_queries
+    )
+    assert "CRM" in result.search_queries
+
+    assert (
+        CopilotEntity.SALESFORCE
+        in result.detected_entities
+    )
+
+
+def test_morning_shift_adds_branch_opening_checklist(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "מהן המשימות בתחילת משמרת בוקר?"
+    )
+
+    assert (
+        "צ'קליסט פתיחת ותחזוקת סניף"
+        in result.search_queries
+    )
+
+    assert (
+        CopilotEntity.BRANCH_OPENING
+        in result.detected_entities
+    )
