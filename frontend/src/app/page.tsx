@@ -21,6 +21,19 @@ type CopilotSource = {
   responsible_department?: string | null;
   updated_on?: string | null;
   version?: string | null;
+  page_id?: string | null;
+  revision_id?: string | null;
+  wiki_page_id?: number | null;
+  wiki_revision_id?: number | null;
+};
+
+type CopilotCitationClaim = {
+  index: number;
+  text: string;
+  source_indexes: number[];
+  source_chunk_ids: string[];
+  source_titles: string[];
+  source_headings: string[];
 };
 
 type CopilotResponse = {
@@ -31,6 +44,7 @@ type CopilotResponse = {
   context_character_count: number;
   context_estimated_tokens: number;
   context_truncated: boolean;
+  citation_claims: CopilotCitationClaim[];
 };
 
 type ConversationEntry = {
@@ -244,12 +258,147 @@ function AnswerWithCitations({
 }
 
 
-function SourcesPanel({
+
+function CitationEvidenceMap({
+  citationClaims,
   sources,
 }: {
+  citationClaims: CopilotCitationClaim[];
   sources: CopilotSource[];
 }) {
+  const sourceByIndex = useMemo(
+    () => new Map(
+      sources.map((source) => [
+        source.index,
+        source,
+      ]),
+    ),
+    [sources],
+  );
+
+  if (citationClaims.length === 0) {
+    return null;
+  }
+
+  return (
+    <section
+      className="citation-evidence-map"
+      aria-label="מפת הראיות של התשובה"
+    >
+      <div className="citation-evidence-heading">
+        <div>
+          <span className="citation-evidence-kicker">
+            Claim-level evidence
+          </span>
+          <h3>מפת הראיות</h3>
+        </div>
+
+        <span className="citation-evidence-count">
+          {citationClaims.length}
+          {" "}
+          טענות ממופות
+        </span>
+      </div>
+
+      <div className="citation-evidence-list">
+        {citationClaims.map((claim) => (
+          <article
+            className="citation-evidence-claim"
+            id={`claim-${claim.index}`}
+            key={claim.index}
+          >
+            <span className="citation-claim-index">
+              {claim.index}
+            </span>
+
+            <div className="citation-claim-content">
+              <p>{claim.text}</p>
+
+              <div className="citation-claim-sources">
+                {claim.source_indexes.map(
+                  (sourceIndex) => {
+                    const source = sourceByIndex.get(
+                      sourceIndex
+                    );
+
+                    if (!source) {
+                      return (
+                        <span
+                          className="citation-claim-source-missing"
+                          key={sourceIndex}
+                        >
+                          מקור {sourceIndex} לא נמצא
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <button
+                        type="button"
+                        className="citation-claim-source"
+                        onClick={() => {
+                          dispatchSourceInspectorEvent(
+                            "copilot:source-open",
+                            source.chunk_id,
+                          );
+
+                          dispatchSourceInspectorEvent(
+                            "copilot:source-highlight",
+                            source.chunk_id,
+                          );
+                        }}
+                        title={`${source.title} — ${getHeading(source)}`}
+                        key={sourceIndex}
+                      >
+                        <span aria-hidden="true">
+                          {sourceIndex}
+                        </span>
+                        {source.title}
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+
+function SourcesPanel({
+  sources,
+  citationClaims = [],
+}: {
+  sources: CopilotSource[];
+  citationClaims?: CopilotCitationClaim[];
+}) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const claimsBySourceIndex = useMemo(() => {
+    const mapping = new Map<
+      number,
+      CopilotCitationClaim[]
+    >();
+
+    for (const claim of citationClaims) {
+      for (const sourceIndex of claim.source_indexes) {
+        const current = (
+          mapping.get(sourceIndex)
+          ?? []
+        );
+
+        mapping.set(
+          sourceIndex,
+          [...current, claim],
+        );
+      }
+    }
+
+    return mapping;
+  }, [citationClaims]);
   const [activeChunkId, setActiveChunkId] = useState<
     string | null
   >(null);
@@ -403,6 +552,10 @@ function SourcesPanel({
           {sources.map((source) => (
             <SourceCard
               source={source}
+              claims={
+                claimsBySourceIndex.get(source.index)
+                ?? []
+              }
               isExpanded={
                 activeChunkId === source.chunk_id
               }
@@ -514,11 +667,13 @@ function getRelevanceLabel(
 
 function SourceCard({
   source,
+  claims = [],
   isExpanded,
   isHighlighted,
   onToggle,
 }: {
   source: CopilotSource;
+  claims?: CopilotCitationClaim[];
   isExpanded: boolean;
   isHighlighted: boolean;
   onToggle: () => void;
@@ -654,6 +809,15 @@ function SourceCard({
             <span className="source-number">
               מקור {source.index}
             </span>
+
+            {claims.length > 0 && (
+              <span className="source-claim-count">
+                תומך ב־
+                {claims.length}
+                {" "}
+                {claims.length === 1 ? "טענה" : "טענות"}
+              </span>
+            )}
           </span>
 
           <strong>{source.title}</strong>
@@ -700,6 +864,64 @@ function SourceCard({
 
       {isExpanded && (
         <div className="reference-source-body">
+          {claims.length > 0 && (
+            <section className="source-supported-claims">
+              <div className="source-supported-heading">
+                <span aria-hidden="true">✓</span>
+                טענות הנתמכות במקור הזה
+              </div>
+
+              <ol>
+                {claims.map((claim) => (
+                  <li key={claim.index}>
+                    <a href={`#claim-${claim.index}`}>
+                      {claim.text}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
+          <div className="source-technical-identifiers">
+            {source.wiki_page_id != null && (
+              <span>
+                <strong>Wiki Page:</strong>
+                {" "}
+                {source.wiki_page_id}
+              </span>
+            )}
+
+            {source.wiki_revision_id != null && (
+              <span>
+                <strong>Wiki Revision:</strong>
+                {" "}
+                {source.wiki_revision_id}
+              </span>
+            )}
+
+            {source.page_id && (
+              <span title={source.page_id}>
+                <strong>Page ID:</strong>
+                {" "}
+                {source.page_id.slice(0, 8)}
+              </span>
+            )}
+
+            {source.revision_id && (
+              <span title={source.revision_id}>
+                <strong>Revision ID:</strong>
+                {" "}
+                {source.revision_id.slice(0, 8)}
+              </span>
+            )}
+
+            <span title={source.chunk_id}>
+              <strong>Chunk:</strong>
+              {" "}
+              {source.chunk_id.slice(0, 8)}
+            </span>
+          </div>
           {hasContent ? (
             <div className="source-original-content">
               <div className="source-original-heading">
@@ -880,6 +1102,7 @@ export default function Home() {
         answer: "",
         grounded: false,
         sources: [],
+        citation_claims: [],
         context_character_count: 0,
         context_estimated_tokens: 0,
         context_truncated: false,
@@ -943,6 +1166,7 @@ export default function Home() {
             context_character_count?: number;
             context_estimated_tokens?: number;
             context_truncated?: boolean;
+            citation_claims?: CopilotCitationClaim[];
             detail?: string;
           };
 
@@ -1004,6 +1228,11 @@ export default function Home() {
               ...currentResponse,
               answer: event.answer ?? "",
               grounded: Boolean(event.grounded),
+              citation_claims: (
+                event.citation_claims
+                ?? currentResponse.citation_claims
+                ?? []
+              ),
             }));
           }
 
@@ -1182,8 +1411,20 @@ export default function Home() {
                     sources={entry.response.sources}
                   />
 
+                  <CitationEvidenceMap
+                    citationClaims={
+                      entry.response.citation_claims
+                      ?? []
+                    }
+                    sources={entry.response.sources}
+                  />
+
                   <SourcesPanel
                     sources={entry.response.sources}
+                    citationClaims={
+                      entry.response.citation_claims
+                      ?? []
+                    }
                   />
 
                   <div className="answer-meta">
