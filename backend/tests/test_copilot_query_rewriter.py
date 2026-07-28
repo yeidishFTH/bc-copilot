@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+from app.services.copilot.entities import (
+    CopilotEntity,
+)
+
 from app.services.copilot.query_rewriter import (
     QueryRewriter,
 )
@@ -215,3 +219,124 @@ def test_matches_hebrew_inflections_and_prefixes(
     result = rewriter.rewrite(query)
 
     assert expected in result.search_queries
+
+
+def test_foreign_customer_entity_adds_existing_kyc_procedure(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "איך מטפלים בלקוח זר?"
+    )
+
+    assert (
+        "נוהל זיהוי ואימות לקוח"
+        in result.search_queries
+    )
+    assert "KYC" in result.search_queries
+
+    assert (
+        CopilotEntity.FOREIGN_CUSTOMER
+        in result.detected_entities
+    )
+
+
+def test_passport_entity_adds_customer_identification_procedure(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "מתי צריך דרכון?"
+    )
+
+    assert (
+        "נוהל זיהוי ואימות לקוח"
+        in result.search_queries
+    )
+    assert (
+        CopilotEntity.PASSPORT
+        in result.detected_entities
+    )
+
+
+def test_atm_entity_adds_usdt_procedure(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "מה עושים בכספומט?"
+    )
+
+    assert (
+        "נוהל מכירת USDT ERC-20 וטיפול בתקלות"
+        in result.search_queries
+    )
+    assert (
+        CopilotEntity.ATM
+        in result.detected_entities
+    )
+
+
+def test_lamassu_entity_adds_usdt_procedure(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "מה עושים ב-Lamassu?"
+    )
+
+    assert (
+        "נוהל מכירת USDT ERC-20 וטיפול בתקלות"
+        in result.search_queries
+    )
+    assert (
+        CopilotEntity.LAMASSU
+        in result.detected_entities
+    )
+
+
+def test_compliance_entity_adds_compliance_procedure(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "מתי פונים לקצין ציות?"
+    )
+
+    assert (
+        "נוהל התקשרות עם מחלקת ציות"
+        in result.search_queries
+    )
+    assert (
+        CopilotEntity.COMPLIANCE
+        in result.detected_entities
+    )
+
+
+def test_unknown_entity_query_remains_single_query(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "מי אחראי על ההדרכה?"
+    )
+
+    assert result.search_queries == (
+        "מי אחראי על ההדרכה?",
+    )
+    assert result.detected_entities == ()
+
+
+def test_entity_expansions_respect_final_query_limit(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "מחיקת לקוח זיהוי לקוח "
+        "כספומט Salesforce ציות"
+    )
+
+    assert (
+        len(result.search_queries)
+        == rewriter.MAX_SEARCH_QUERIES
+    )
+
+    assert len(
+        {
+            query.casefold()
+            for query in result.search_queries
+        }
+    ) == len(result.search_queries)

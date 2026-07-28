@@ -3,6 +3,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from app.services.copilot.entities import (
+    CopilotEntity,
+    EntityDetector,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class QueryRewrite:
@@ -13,6 +18,7 @@ class QueryRewrite:
     search_queries: tuple[str, ...]
     matched_aliases: tuple[str, ...]
     matched_document_names: tuple[str, ...]
+    detected_entities: tuple[CopilotEntity, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +43,81 @@ class QueryRewriter:
     """
 
     MAX_SEARCH_QUERIES = 8
+
+    _ENTITY_EXPANSIONS = {
+        CopilotEntity.FOREIGN_CUSTOMER: (
+            "נוהל זיהוי ואימות לקוח",
+            "KYC",
+            "דרכון",
+        ),
+        CopilotEntity.PASSPORT: (
+            "נוהל זיהוי ואימות לקוח",
+            "לקוחות זרים",
+            "KYC",
+        ),
+        CopilotEntity.ID_DOCUMENT: (
+            "נוהל זיהוי ואימות לקוח",
+            "KYC",
+            "תעודה מזהה",
+        ),
+        CopilotEntity.KYC: (
+            "נוהל זיהוי ואימות לקוח",
+            "זיהוי ואימות לקוח",
+        ),
+        CopilotEntity.AML: (
+            "נוהל התקשרות עם מחלקת ציות",
+            "ציות ורגולציה",
+        ),
+        CopilotEntity.COMPLIANCE: (
+            "נוהל התקשרות עם מחלקת ציות",
+            "ציות ורגולציה",
+            "AML",
+        ),
+        CopilotEntity.CUSTOMER_DELETION: (
+            "נוהל מחיקת כרטיס לקוח",
+            "מחיקת כרטיס לקוח",
+        ),
+        CopilotEntity.SALESFORCE: (
+            "מערכת Salesforce",
+            "CRM",
+        ),
+        CopilotEntity.ATM: (
+            "נוהל מכירת USDT ERC-20 וטיפול בתקלות",
+            "Lamassu",
+            "USDT",
+        ),
+        CopilotEntity.LAMASSU: (
+            "נוהל מכירת USDT ERC-20 וטיפול בתקלות",
+            "USDT",
+            "ERC-20",
+        ),
+        CopilotEntity.TRANSACTION: (
+            "יצירת עסקה",
+            "עסקת מכירה הדרכה וריענון",
+        ),
+        CopilotEntity.USDT: (
+            "נוהל מכירת USDT ERC-20 וטיפול בתקלות",
+            "Lamassu",
+            "ERC-20",
+        ),
+        CopilotEntity.BRANCH_OPENING: (
+            "צ'קליסט פתיחת ותחזוקת סניף",
+            "פתיחת סניף",
+        ),
+        CopilotEntity.DAY_CLOSING: (
+            "נוהל סגירת יום",
+            "סגירת סניף",
+        ),
+        CopilotEntity.CASH_COUNT: (
+            "נוהל סגירת יום",
+            "ספירה סופית",
+        ),
+        CopilotEntity.WHATSAPP: (
+            "נוהל מענה שיחות WhatsApp",
+            "WhatsApp",
+        ),
+    }
+
 
     _HEBREW_PREFIXES = (
         "ולכש",
@@ -351,6 +432,16 @@ class QueryRewriter:
         "ציות ורגולציה",
     )
 
+    def __init__(
+        self,
+        *,
+        entity_detector: EntityDetector | None = None,
+    ) -> None:
+        self._entity_detector = (
+            entity_detector
+            or EntityDetector()
+        )
+
     def rewrite(
         self,
         query: str,
@@ -358,6 +449,9 @@ class QueryRewriter:
         normalized = self._normalize_query(query)
         normalized_casefold = normalized.casefold()
         tokens = self._tokenize(normalized)
+        entity_detection = self._entity_detector.detect(
+            normalized
+        )
 
         search_queries: list[str] = [normalized]
         matched_aliases: list[str] = []
@@ -399,6 +493,34 @@ class QueryRewriter:
             ):
                 break
 
+        for entity in entity_detection.entity_ids:
+            expansions = self._ENTITY_EXPANSIONS.get(
+                entity,
+                (),
+            )
+
+            for expansion in expansions:
+                self._append_unique(
+                    search_queries,
+                    expansion,
+                )
+
+                if (
+                    len(search_queries)
+                    >= self.MAX_SEARCH_QUERIES
+                ):
+                    break
+
+            if (
+                len(search_queries)
+                >= self.MAX_SEARCH_QUERIES
+            ):
+                break
+
+        search_queries = list(
+            dict.fromkeys(search_queries)
+        )[:self.MAX_SEARCH_QUERIES]
+
         return QueryRewrite(
             original_query=query,
             normalized_query=normalized,
@@ -410,6 +532,9 @@ class QueryRewriter:
                 dict.fromkeys(
                     matched_document_names
                 )
+            ),
+            detected_entities=(
+                entity_detection.entity_ids
             ),
         )
 

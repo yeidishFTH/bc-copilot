@@ -20,6 +20,10 @@ from app.services.copilot.providers import (
 from app.services.copilot.service import CopilotAnswerService
 
 __all__ = [
+    "CopilotEntity",
+    "DetectedEntity",
+    "EntityDetection",
+    "EntityDetector",
     "MultiQueryKnowledgeContextService",
     "MultiQuerySearchReader",
     "KnowledgeQueryRetriever",
@@ -64,4 +68,11 @@ from app.services.copilot.multi_query_retrieval import (
 from app.services.copilot.multi_query_context import (
     MultiQueryKnowledgeContextService,
     MultiQuerySearchReader,
+)
+
+from app.services.copilot.entities import (
+    CopilotEntity,
+    DetectedEntity,
+    EntityDetection,
+    EntityDetector,
 )
