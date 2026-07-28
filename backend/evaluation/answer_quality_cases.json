@@ -1,0 +1,154 @@
+[
+  {
+    "id": "delete-customer-answer",
+    "question": "איך מוחקים לקוח?",
+    "expected_source_titles": [
+      "נוהל מחיקת כרטיס לקוח"
+    ],
+    "required_any_terms": [
+      "מחיק",
+      "כרטיס לקוח",
+      "Salesforce"
+    ],
+    "required_all_terms": [],
+    "forbidden_terms": [],
+    "notes": "התשובה צריכה להסביר את התהליך על בסיס נוהל מחיקת כרטיס לקוח."
+  },
+  {
+    "id": "identify-customer-answer",
+    "question": "איך מזהים לקוח?",
+    "expected_source_titles": [
+      "נוהל זיהוי ואימות לקוח"
+    ],
+    "required_any_terms": [
+      "זיהוי",
+      "אימות",
+      "תעודה"
+    ],
+    "required_all_terms": [],
+    "forbidden_terms": [],
+    "notes": "התשובה צריכה להתבסס על נוהל זיהוי ואימות לקוח."
+  },
+  {
+    "id": "foreign-customer-answer",
+    "question": "איך מטפלים בלקוח זר?",
+    "expected_source_titles": [
+      "נוהל זיהוי ואימות לקוח"
+    ],
+    "required_any_terms": [
+      "דרכון",
+      "לקוח זר",
+      "תושב חוץ"
+    ],
+    "required_all_terms": [],
+    "forbidden_terms": [],
+    "notes": "התשובה צריכה להתייחס לזיהוי לקוח באמצעות דרכון."
+  },
+  {
+    "id": "compliance-contact-answer",
+    "question": "מתי פונים לקצין ציות?",
+    "expected_source_titles": [
+      "נוהל התקשרות עם מחלקת ציות"
+    ],
+    "required_any_terms": [
+      "ציות",
+      "מחלקת ציות",
+      "קצין ציות"
+    ],
+    "required_all_terms": [],
+    "forbidden_terms": [],
+    "notes": "התשובה צריכה להסביר מתי וכיצד מערבים את מחלקת הציות."
+  },
+  {
+    "id": "compliance-overview-answer",
+    "question": "מה המשמעות של ציות ורגולציה?",
+    "expected_source_titles": [
+      "ציות ורגולציה"
+    ],
+    "required_any_terms": [
+      "ציות",
+      "רגולציה",
+      "כללים"
+    ],
+    "required_all_terms": [],
+    "forbidden_terms": [],
+    "notes": "שאלת הסבר שצריכה להתבסס על עמוד הידע ולא רק על נוהל התקשרות."
+  },
+  {
+    "id": "salesforce-accounts-answer",
+    "question": "איך עובדים עם Accounts בסיילספורס?",
+    "expected_source_titles": [
+      "מערכת Salesforce"
+    ],
+    "required_any_terms": [
+      "Accounts",
+      "Salesforce",
+      "לקוחות"
+    ],
+    "required_all_terms": [],
+    "forbidden_terms": [],
+    "notes": "התשובה צריכה להשתמש במדריך מערכת Salesforce."
+  },
+  {
+    "id": "atm-usdt-answer",
+    "question": "איך מוכרים USDT דרך הכספומט?",
+    "expected_source_titles": [
+      "נוהל מכירת USDT ERC-20 וטיפול בתקלות"
+    ],
+    "required_any_terms": [
+      "USDT",
+      "Lamassu",
+      "ERC-20"
+    ],
+    "required_all_terms": [
+      "USDT"
+    ],
+    "forbidden_terms": [],
+    "notes": "התשובה צריכה להתבסס על נוהל מכירת USDT."
+  },
+  {
+    "id": "branch-opening-answer",
+    "question": "מהן המשימות בתחילת משמרת בוקר?",
+    "expected_source_titles": [
+      "צ'קליסט פתיחת ותחזוקת סניף"
+    ],
+    "required_any_terms": [
+      "פתיח",
+      "משימות",
+      "סניף"
+    ],
+    "required_all_terms": [],
+    "forbidden_terms": [],
+    "notes": "התשובה צריכה להציג משימות פתיחה מעשיות."
+  },
+  {
+    "id": "day-closing-answer",
+    "question": "איך מבצעים ספירה סופית בסוף היום?",
+    "expected_source_titles": [
+      "נוהל סגירת יום"
+    ],
+    "required_any_terms": [
+      "ספירה",
+      "סגירת יום",
+      "מזומן"
+    ],
+    "required_all_terms": [],
+    "forbidden_terms": [],
+    "notes": "התשובה צריכה להתבסס על נוהל סגירת יום."
+  },
+  {
+    "id": "whatsapp-answer",
+    "question": "איך עונים ללקוח בשיחת WhatsApp?",
+    "expected_source_titles": [
+      "נוהל מענה שיחות WhatsApp"
+    ],
+    "required_any_terms": [
+      "WhatsApp",
+      "לקוח",
+      "מענה"
+    ],
+    "required_all_terms": [],
+    "forbidden_terms": [],
+    "notes": "התשובה צריכה להסתמך על נוהל המענה ב-WhatsApp."
+  }
+]
