@@ -8,6 +8,9 @@ from app.services.copilot.citations import (
 from app.services.copilot.claim_citations import (
     ClaimCitationMapper,
 )
+from app.services.copilot.conversation_memory import (
+    ConversationMemoryResolver,
+)
 from app.services.copilot.intent import (
     IntentClassifier,
 )
@@ -54,6 +57,7 @@ class CopilotAnswerService:
         planner: CopilotPlanner | None = None,
         citation_validator: CitationValidator | None = None,
         claim_citation_mapper: ClaimCitationMapper | None = None,
+        conversation_resolver: ConversationMemoryResolver | None = None,
     ) -> None:
         self._context_service = context_service
         self._generator = generator
@@ -70,6 +74,10 @@ class CopilotAnswerService:
             claim_citation_mapper
             or ClaimCitationMapper()
         )
+        self._conversation_resolver = (
+            conversation_resolver
+            or ConversationMemoryResolver()
+        )
 
     async def answer(
         self,
@@ -84,13 +92,18 @@ class CopilotAnswerService:
     ) -> CopilotAnswer:
         normalized_question = self._normalize_question(question)
         normalized_history = self._normalize_history(history)
-        retrieval_query = self._build_retrieval_query(
-            normalized_question,
-            normalized_history,
+        conversation_resolution = (
+            self._conversation_resolver.resolve(
+                normalized_question,
+                normalized_history,
+            )
+        )
+        retrieval_query = (
+            conversation_resolution.resolved_question
         )
 
         classification = self._intent_classifier.classify(
-            normalized_question
+            retrieval_query
         )
         plan = self._planner.plan(classification)
 
@@ -217,13 +230,18 @@ class CopilotAnswerService:
     ) -> AsyncIterator[dict[str, object]]:
         normalized_question = self._normalize_question(question)
         normalized_history = self._normalize_history(history)
-        retrieval_query = self._build_retrieval_query(
-            normalized_question,
-            normalized_history,
+        conversation_resolution = (
+            self._conversation_resolver.resolve(
+                normalized_question,
+                normalized_history,
+            )
+        )
+        retrieval_query = (
+            conversation_resolution.resolved_question
         )
 
         classification = self._intent_classifier.classify(
-            normalized_question
+            retrieval_query
         )
         plan = self._planner.plan(classification)
 

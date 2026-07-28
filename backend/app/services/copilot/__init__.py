@@ -20,6 +20,8 @@ from app.services.copilot.providers import (
 from app.services.copilot.service import CopilotAnswerService
 
 __all__ = [
+    "ConversationMemoryResolver",
+    "ConversationResolution",
     "CitationClaim",
     "CitationMapping",
     "ClaimCitationMapper",
@@ -84,4 +86,9 @@ from app.services.copilot.claim_citations import (
     CitationClaim,
     CitationMapping,
     ClaimCitationMapper,
+)
+
+from app.services.copilot.conversation_memory import (
+    ConversationMemoryResolver,
+    ConversationResolution,
 )

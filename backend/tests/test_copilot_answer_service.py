@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 
 from app.services.copilot import CopilotAnswerService
+from app.services.copilot.models import CopilotConversationMessage
 from app.services.knowledge.retrieval import (
     KnowledgeContext,
     KnowledgeContextSource,
@@ -443,3 +444,63 @@ async def test_summary_uses_broad_retrieval_plan() -> None:
     assert call["max_characters"] == 22_000
     assert call["max_chunks"] == 15
     assert call["max_chunks_per_page"] == 8
+
+
+@pytest.mark.asyncio
+async def test_answer_does_not_pollute_new_topic_with_history() -> None:
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator(
+        "תשובה עם מקור. [SOURCE 1]"
+    )
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    await service.answer(
+        "איך עובדים עם Salesforce?",
+        history=(
+            CopilotConversationMessage(
+                role="user",
+                content="איך מוחקים לקוח?",
+            ),
+            CopilotConversationMessage(
+                role="assistant",
+                content="פועלים לפי נוהל המחיקה.",
+            ),
+        ),
+    )
+
+    assert context_service.calls[-1]["query"] == (
+        "איך עובדים עם Salesforce?"
+    )
+
+
+@pytest.mark.asyncio
+async def test_answer_resolves_contextual_follow_up_before_retrieval() -> None:
+    context_service = FakeContextService(make_context())
+    generator = FakeGenerator(
+        "תשובה עם מקור. [SOURCE 1]"
+    )
+    service = CopilotAnswerService(
+        context_service=context_service,  # type: ignore[arg-type]
+        generator=generator,
+    )
+
+    await service.answer(
+        "ומה אם הוא לקוח זר?",
+        history=(
+            CopilotConversationMessage(
+                role="user",
+                content="איך מוחקים לקוח?",
+            ),
+            CopilotConversationMessage(
+                role="assistant",
+                content="פועלים לפי נוהל המחיקה.",
+            ),
+        ),
+    )
+
+    assert context_service.calls[-1]["query"] == (
+        "איך מוחקים לקוח? ומה אם הוא לקוח זר?"
+    )
