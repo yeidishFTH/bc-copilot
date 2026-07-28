@@ -20,6 +20,9 @@ from app.services.copilot.providers import (
 from app.services.copilot.service import CopilotAnswerService
 
 __all__ = [
+    "CitationClaim",
+    "CitationMapping",
+    "ClaimCitationMapper",
     "CopilotEntity",
     "DetectedEntity",
     "EntityDetection",
@@ -75,4 +78,10 @@ from app.services.copilot.entities import (
     DetectedEntity,
     EntityDetection,
     EntityDetector,
+)
+
+from app.services.copilot.claim_citations import (
+    CitationClaim,
+    CitationMapping,
+    ClaimCitationMapper,
 )

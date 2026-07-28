@@ -5,6 +5,9 @@ from collections.abc import AsyncIterator, Sequence
 from app.services.copilot.citations import (
     CitationValidator,
 )
+from app.services.copilot.claim_citations import (
+    ClaimCitationMapper,
+)
 from app.services.copilot.intent import (
     IntentClassifier,
 )
@@ -50,6 +53,7 @@ class CopilotAnswerService:
         intent_classifier: IntentClassifier | None = None,
         planner: CopilotPlanner | None = None,
         citation_validator: CitationValidator | None = None,
+        claim_citation_mapper: ClaimCitationMapper | None = None,
     ) -> None:
         self._context_service = context_service
         self._generator = generator
@@ -61,6 +65,10 @@ class CopilotAnswerService:
         self._citation_validator = (
             citation_validator
             or CitationValidator()
+        )
+        self._claim_citation_mapper = (
+            claim_citation_mapper
+            or ClaimCitationMapper()
         )
 
     async def answer(
@@ -124,7 +132,10 @@ class CopilotAnswerService:
                 canonical_url=source.canonical_url,
                 chunk_id=source.chunk_id,
                 rank=source.rank,
-
+                page_id=source.page_id,
+                revision_id=source.revision_id,
+                wiki_page_id=source.wiki_page_id,
+                wiki_revision_id=source.wiki_revision_id,
                 content=source.content,
                 status=source.status,
                 document_type=source.document_type,
@@ -174,6 +185,14 @@ class CopilotAnswerService:
             require_citation=True,
         )
 
+
+        citation_mapping = (
+            self._claim_citation_mapper.map(
+                normalized_answer,
+                sources=sources,
+            )
+        )
+
         return CopilotAnswer(
             question=normalized_question,
             answer=normalized_answer,
@@ -182,6 +201,7 @@ class CopilotAnswerService:
             context_character_count=context.character_count,
             context_estimated_tokens=context.estimated_tokens,
             context_truncated=context.truncated,
+            citation_claims=citation_mapping.claims,
         )
 
     async def stream_answer(
@@ -245,7 +265,10 @@ class CopilotAnswerService:
                 canonical_url=source.canonical_url,
                 chunk_id=source.chunk_id,
                 rank=source.rank,
-
+                page_id=source.page_id,
+                revision_id=source.revision_id,
+                wiki_page_id=source.wiki_page_id,
+                wiki_revision_id=source.wiki_revision_id,
                 content=source.content,
                 status=source.status,
                 document_type=source.document_type,
@@ -278,6 +301,12 @@ class CopilotAnswerService:
                     ),
                     "chunk_id": source.chunk_id,
                     "rank": source.rank,
+                    "page_id": source.page_id,
+                    "revision_id": source.revision_id,
+                    "wiki_page_id": source.wiki_page_id,
+                    "wiki_revision_id": (
+                        source.wiki_revision_id
+                    ),
                     "content": source.content,
                     "status": source.status,
                     "document_type": (
@@ -363,10 +392,37 @@ class CopilotAnswerService:
             require_citation=True,
         )
 
+
+        citation_mapping = (
+            self._claim_citation_mapper.map(
+                normalized_answer,
+                sources=sources,
+            )
+        )
+
         yield {
             "type": "complete",
             "answer": normalized_answer,
             "grounded": True,
+            "citation_claims": [
+                {
+                    "index": claim.index,
+                    "text": claim.text,
+                    "source_indexes": list(
+                        claim.source_indexes
+                    ),
+                    "source_chunk_ids": list(
+                        claim.source_chunk_ids
+                    ),
+                    "source_titles": list(
+                        claim.source_titles
+                    ),
+                    "source_headings": list(
+                        claim.source_headings
+                    ),
+                }
+                for claim in citation_mapping.claims
+            ],
         }
 
     @staticmethod

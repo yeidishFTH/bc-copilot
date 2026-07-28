@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+from app.services.copilot.claim_citations import (
+    CitationClaim,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class CopilotConversationMessage:
@@ -22,6 +26,10 @@ class CopilotSource:
     canonical_url: str
     chunk_id: str
     rank: float
+    page_id: str | None = None
+    revision_id: str | None = None
+    wiki_page_id: int | None = None
+    wiki_revision_id: int | None = None
     content: str = ""
     status: str | None = None
     document_type: str | None = None
@@ -45,3 +53,4 @@ class CopilotAnswer:
     context_character_count: int
     context_estimated_tokens: int
     context_truncated: bool
+    citation_claims: tuple[CitationClaim, ...] = ()

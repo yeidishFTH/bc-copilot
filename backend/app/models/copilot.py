@@ -71,6 +71,10 @@ class CopilotSourceResponse(BaseModel):
     canonical_url: str
     chunk_id: str
     rank: float
+    page_id: str | None = None
+    revision_id: str | None = None
+    wiki_page_id: int | None = None
+    wiki_revision_id: int | None = None
     content: str = ""
     status: str | None = None
     document_type: str | None = None
@@ -85,6 +89,15 @@ class CopilotSourceResponse(BaseModel):
     version: str | None = None
 
 
+class CopilotCitationClaimResponse(BaseModel):
+    index: int
+    text: str
+    source_indexes: list[int]
+    source_chunk_ids: list[str]
+    source_titles: list[str]
+    source_headings: list[str]
+
+
 class CopilotAskResponse(BaseModel):
     question: str
     answer: str
@@ -93,3 +106,6 @@ class CopilotAskResponse(BaseModel):
     context_character_count: int
     context_estimated_tokens: int
     context_truncated: bool
+    citation_claims: list[
+        CopilotCitationClaimResponse
+    ] = Field(default_factory=list)

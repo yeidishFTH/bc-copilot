@@ -12,6 +12,7 @@ from app.api.dependencies import (
 from app.models.copilot import (
     CopilotAskRequest,
     CopilotAskResponse,
+    CopilotCitationClaimResponse,
     CopilotSourceResponse,
 )
 from app.services.copilot import (
@@ -88,7 +89,10 @@ async def ask_copilot(
                 ),
                 chunk_id=source.chunk_id,
                 rank=source.rank,
-
+                page_id=source.page_id,
+                revision_id=source.revision_id,
+                wiki_page_id=source.wiki_page_id,
+                wiki_revision_id=source.wiki_revision_id,
                 content=source.content,
                 status=source.status,
                 document_type=source.document_type,
@@ -113,6 +117,25 @@ async def ask_copilot(
         context_truncated=(
             result.context_truncated
         ),
+        citation_claims=[
+            CopilotCitationClaimResponse(
+                index=claim.index,
+                text=claim.text,
+                source_indexes=list(
+                    claim.source_indexes
+                ),
+                source_chunk_ids=list(
+                    claim.source_chunk_ids
+                ),
+                source_titles=list(
+                    claim.source_titles
+                ),
+                source_headings=list(
+                    claim.source_headings
+                ),
+            )
+            for claim in result.citation_claims
+        ],
     )
 
 

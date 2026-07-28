@@ -23,6 +23,8 @@ class KnowledgeContextSource:
     canonical_url: str
     content: str
     rank: float
+    wiki_page_id: int | None = None
+    wiki_revision_id: int | None = None
     status: str | None = None
     document_type: str | None = None
     portal: str | None = None
@@ -196,6 +198,8 @@ class KnowledgeContextBuilder:
             index=index,
             page_id=result.page_id,
             revision_id=result.revision_id,
+            wiki_page_id=result.wiki_page_id,
+            wiki_revision_id=result.wiki_revision_id,
             chunk_id=result.chunk_id,
             title=result.title,
             heading_path=result.heading_path,
@@ -226,17 +230,33 @@ class KnowledgeContextBuilder:
             else "פתיח העמוד"
         )
 
-        return "\n".join(
+        metadata_lines = [
+            f"[SOURCE {source.index}]",
+            f"כותרת: {source.title}",
+            f"סעיף: {heading}",
+            f"קישור: {source.canonical_url}",
+        ]
+
+        if source.wiki_page_id is not None:
+            metadata_lines.append(
+                f"מזהה עמוד ויקי: {source.wiki_page_id}"
+            )
+
+        if source.wiki_revision_id is not None:
+            metadata_lines.append(
+                f"מזהה גרסת ויקי: {source.wiki_revision_id}"
+            )
+
+        metadata_lines.extend(
             (
-                f"[SOURCE {source.index}]",
-                f"כותרת: {source.title}",
-                f"סעיף: {heading}",
-                f"קישור: {source.canonical_url}",
+                f"מזהה קטע: {source.chunk_id}",
                 f"דירוג: {source.rank:.6f}",
                 "תוכן:",
                 source.content,
             )
         )
+
+        return "\n".join(metadata_lines)
 
     @classmethod
     def _truncate_first_source(
@@ -249,6 +269,8 @@ class KnowledgeContextBuilder:
             index=source.index,
             page_id=source.page_id,
             revision_id=source.revision_id,
+            wiki_page_id=source.wiki_page_id,
+            wiki_revision_id=source.wiki_revision_id,
             chunk_id=source.chunk_id,
             title=source.title,
             heading_path=source.heading_path,
@@ -279,6 +301,8 @@ class KnowledgeContextBuilder:
             index=source.index,
             page_id=source.page_id,
             revision_id=source.revision_id,
+            wiki_page_id=source.wiki_page_id,
+            wiki_revision_id=source.wiki_revision_id,
             chunk_id=source.chunk_id,
             title=source.title,
             heading_path=source.heading_path,
