@@ -560,3 +560,45 @@ def test_mentor_report_outranks_generic_onboarding_queries(
         "משוב חונך",
         "התקדמות חניך",
     )
+
+
+@pytest.mark.parametrize(
+    ("question", "expected_entity", "expected_title"),
+    [
+        (
+            "מה צריך לבדוק לפני שנותנים שירות ללקוח?",
+            CopilotEntity.SEVEN_CHECKS,
+            "הדרכה - שבעת השינים",
+        ),
+        (
+            "איפה נמצאת רשימת בדיקות החובה לנציג?",
+            CopilotEntity.SEVEN_CHECKS,
+            "הדרכה - שבעת השינים",
+        ),
+        (
+            "איפה נמצאות הנחיות העבודה לפרסום ברשתות החברתיות?",
+            CopilotEntity.SOCIAL_MEDIA_GUIDELINES,
+            "נוהל עבודה למנהלי סושיאל",
+        ),
+        (
+            "איך השירות של ביטקוין צ'יינג' עובד באופן כללי?",
+            CopilotEntity.COMPANY_BACKGROUND,
+            "רקע כללי",
+        ),
+        (
+            "מה צריך לנקות בסניף לקראת פסח?",
+            CopilotEntity.PASSOVER_CLEANING,
+            "צ'קליסט ניקיון לפסח",
+        ),
+    ],
+)
+def test_query_coverage_batch3_fits_query_budget(
+    rewriter: QueryRewriter,
+    question: str,
+    expected_entity: CopilotEntity,
+    expected_title: str,
+) -> None:
+    result = rewriter.rewrite(question)
+
+    assert expected_entity in result.detected_entities
+    assert expected_title in result.search_queries[:5]

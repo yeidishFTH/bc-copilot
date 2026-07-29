@@ -33,6 +33,10 @@ class CopilotEntity(StrEnum):
     MENTOR_REPORT = "mentor_report"
     REPRESENTATIVE_ROLE = "representative_role"
     COUPON = "coupon"
+    SEVEN_CHECKS = "seven_checks"
+    SOCIAL_MEDIA_GUIDELINES = "social_media_guidelines"
+    COMPANY_BACKGROUND = "company_background"
+    PASSOVER_CLEANING = "passover_cleaning"
 
 
 @dataclass(frozen=True, slots=True)
@@ -687,6 +691,138 @@ class EntityDetector:
                         "לקוח",
                         "שימוש",
                         "כללים",
+                    }
+                ),
+            ),
+            confidence=0.99,
+        ),
+        _EntityRule(
+            entity=CopilotEntity.SEVEN_CHECKS,
+            phrases=(
+                "שבעת השינים",
+                "שבעת השי״נים",
+                "שבעת השינין",
+                "בדיקות החובה לנציג",
+                "בדיקות לפני מתן שירות",
+                "לפני שנותנים שירות",
+                "רשימת בדיקות החובה",
+                "מה צריך לבדוק לפני שירות",
+            ),
+            token_groups=(
+                frozenset(
+                    {
+                        "בדיקות",
+                        "בדיקה",
+                        "לבדוק",
+                        "לוודא",
+                        "חובה",
+                    }
+                ),
+                frozenset(
+                    {
+                        "שירות",
+                        "לקוח",
+                        "נציג",
+                        "נותנים",
+                        "מתן",
+                    }
+                ),
+            ),
+            confidence=0.98,
+        ),
+        _EntityRule(
+            entity=CopilotEntity.SOCIAL_MEDIA_GUIDELINES,
+            phrases=(
+                "נוהל עבודה למנהלי סושיאל",
+                "הנחיות עבודה לפרסום",
+                "פרסום ברשתות החברתיות",
+                "עבודה ברשתות החברתיות",
+                "נהלי סושיאל",
+                "מנהל הסושיאל",
+                "מנהלי סושיאל",
+                "תוכן לרשתות חברתיות",
+            ),
+            token_groups=(
+                frozenset(
+                    {
+                        "סושיאל",
+                        "פרסום",
+                        "תוכן",
+                        "פוסט",
+                        "פוסטים",
+                    }
+                ),
+                frozenset(
+                    {
+                        "רשתות",
+                        "חברתיות",
+                        "אינסטגרם",
+                        "פייסבוק",
+                        "טיקטוק",
+                    }
+                ),
+            ),
+            confidence=0.98,
+        ),
+        _EntityRule(
+            entity=CopilotEntity.COMPANY_BACKGROUND,
+            phrases=(
+                "רקע כללי",
+                "רקע על החברה",
+                "על ביטקוין צ'יינג'",
+                "על Bitcoin Change",
+                "איך השירות עובד באופן כללי",
+                "איך החברה פועלת",
+                "סקירה כללית על החברה",
+                "מה עושה ביטקוין צ'יינג'",
+            ),
+            token_groups=(
+                frozenset(
+                    {
+                        "חברה",
+                        "השירות",
+                        "פעילות",
+                        "רקע",
+                        "סקירה",
+                    }
+                ),
+                frozenset(
+                    {
+                        "כללי",
+                        "כללית",
+                        "עובד",
+                        "פועל",
+                        "פועלת",
+                    }
+                ),
+            ),
+            confidence=0.96,
+        ),
+        _EntityRule(
+            entity=CopilotEntity.PASSOVER_CLEANING,
+            phrases=(
+                "צ'קליסט ניקיון לפסח",
+                "ניקיון לפסח",
+                "ניקיון לקראת פסח",
+                "לנקות בסניף לקראת פסח",
+                "משימות ניקיון לפסח",
+                "הכנת הסניף לפסח",
+                "ניקיונות פסח",
+            ),
+            token_groups=(
+                frozenset(
+                    {
+                        "פסח",
+                        "הפסח",
+                    }
+                ),
+                frozenset(
+                    {
+                        "ניקיון",
+                        "לנקות",
+                        "ניקיונות",
+                        "משימות",
+                        "סניף",
                     }
                 ),
             ),

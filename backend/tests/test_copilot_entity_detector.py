@@ -283,3 +283,37 @@ def test_detects_new_retrieval_coverage_entities(
     detection = EntityDetector().detect(question)
 
     assert expected in detection.entity_ids
+
+
+@pytest.mark.parametrize(
+    ("question", "expected"),
+    [
+        (
+            "מה צריך לבדוק לפני שנותנים שירות ללקוח?",
+            CopilotEntity.SEVEN_CHECKS,
+        ),
+        (
+            "איפה נמצאת רשימת בדיקות החובה לנציג?",
+            CopilotEntity.SEVEN_CHECKS,
+        ),
+        (
+            "איפה נמצאות הנחיות העבודה לפרסום ברשתות החברתיות?",
+            CopilotEntity.SOCIAL_MEDIA_GUIDELINES,
+        ),
+        (
+            "איך השירות של ביטקוין צ'יינג' עובד באופן כללי?",
+            CopilotEntity.COMPANY_BACKGROUND,
+        ),
+        (
+            "מה צריך לנקות בסניף לקראת פסח?",
+            CopilotEntity.PASSOVER_CLEANING,
+        ),
+    ],
+)
+def test_detects_query_coverage_batch3_entities(
+    question: str,
+    expected: CopilotEntity,
+) -> None:
+    detection = EntityDetector().detect(question)
+
+    assert expected in detection.entity_ids
