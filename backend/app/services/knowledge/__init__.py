@@ -1,3 +1,6 @@
+from app.services.knowledge.openai_embeddings import (
+    OpenAIEmbeddingGenerator,
+)
 from app.services.knowledge.embeddings import (
     DeterministicEmbeddingGenerator,
     EmbeddingGenerator,
@@ -30,6 +33,7 @@ from app.services.knowledge.retrieval import (
 )
 
 __all__ = [
+    "OpenAIEmbeddingGenerator",
     "DeterministicEmbeddingGenerator",
     "EmbeddingGenerator",
     "EmbeddingVector",
