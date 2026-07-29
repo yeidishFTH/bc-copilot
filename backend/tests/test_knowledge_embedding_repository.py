@@ -132,6 +132,10 @@ async def test_fetch_pending_builds_stable_query() -> None:
         "knowledge_pages.latest_revision_id = "
         "knowledge_revisions.wiki_revision_id"
     ) in sql
+    assert "Archive/" in sql
+    assert "Sandbox/" in sql
+    assert "#redirect%" in sql
+    assert "#הפניה%" in sql
     assert "ORDER BY knowledge_pages.title ASC" in sql
     assert "knowledge_chunks.position ASC" in sql
     assert "LIMIT 25" in sql

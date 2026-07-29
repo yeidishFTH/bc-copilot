@@ -4,7 +4,7 @@ import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from sqlalchemy import bindparam, select, update
+from sqlalchemy import bindparam, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import (
@@ -91,6 +91,20 @@ class KnowledgeEmbeddingRepository:
                 KnowledgePage.latest_revision_id
                 == KnowledgeRevision.wiki_revision_id,
                 KnowledgeChunk.embedding.is_(None),
+                ~KnowledgePage.title.startswith(
+                    "Archive/"
+                ),
+                ~KnowledgePage.title.startswith(
+                    "Sandbox/"
+                ),
+                ~func.lower(
+                    func.ltrim(
+                        KnowledgeChunk.content
+                    )
+                ).like("#redirect%"),
+                ~func.ltrim(
+                    KnowledgeChunk.content
+                ).like("#הפניה%"),
             )
             .order_by(
                 KnowledgePage.title.asc(),
