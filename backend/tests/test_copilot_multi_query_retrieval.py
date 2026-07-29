@@ -346,9 +346,13 @@ async def test_exact_title_match_can_outrank_higher_raw_rank() -> None:
 
     result = await service.search(
         "איך מטפלים בלקוח זר?",
-        max_queries=3,
+        max_queries=4,
     )
 
+    assert (
+        "דגשים בעת רישום לקוחות זרים"
+        in result.executed_queries
+    )
     assert result.results[0].chunk_id == "title-match"
 
 

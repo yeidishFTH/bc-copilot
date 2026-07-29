@@ -444,3 +444,45 @@ def test_employee_onboarding_document_name_is_detected(
         "נוהל קליטת עובד"
         in result.search_queries
     )
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "איך מטפלים בלקוח זר?",
+        "איזה מסמכים צריך לקבל מלקוח עם דרכון?",
+    ],
+)
+def test_foreign_customer_priority_fits_query_budget(
+    rewriter: QueryRewriter,
+    question: str,
+) -> None:
+    result = rewriter.rewrite(question)
+
+    first_five = result.search_queries[:5]
+
+    assert (
+        "נוהל זיהוי ואימות לקוח"
+        in first_five
+    )
+    assert "KYC" in first_five
+    assert (
+        "דגשים בעת רישום לקוחות זרים"
+        in first_five
+    )
+
+
+def test_foreign_customer_expansion_order(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "איך מטפלים בלקוח זר?"
+    )
+
+    assert result.search_queries[:5] == (
+        "איך מטפלים בלקוח זר?",
+        "נוהל זיהוי ואימות לקוח",
+        "KYC",
+        "דגשים בעת רישום לקוחות זרים",
+        "דרכון",
+    )
