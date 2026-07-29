@@ -105,7 +105,10 @@ class CopilotAnswerService:
         classification = self._intent_classifier.classify(
             retrieval_query
         )
-        plan = self._planner.plan(classification)
+        plan = self._planner.plan(
+            classification,
+            retrieval_query,
+        )
 
         resolved_search_limit = (
             search_limit
@@ -128,8 +131,9 @@ class CopilotAnswerService:
             else plan.max_chunks_per_page
         )
 
-        context = await self._context_service.build_context(
+        context = await self._build_context(
             retrieval_query,
+            strategy=plan.strategy,
             search_limit=resolved_search_limit,
             namespace_ids=namespace_ids,
             max_characters=resolved_max_characters,
@@ -243,7 +247,10 @@ class CopilotAnswerService:
         classification = self._intent_classifier.classify(
             retrieval_query
         )
-        plan = self._planner.plan(classification)
+        plan = self._planner.plan(
+            classification,
+            retrieval_query,
+        )
 
         resolved_search_limit = (
             search_limit
@@ -266,8 +273,9 @@ class CopilotAnswerService:
             else plan.max_chunks_per_page
         )
 
-        context = await self._context_service.build_context(
+        context = await self._build_context(
             retrieval_query,
+            strategy=plan.strategy,
             search_limit=resolved_search_limit,
             namespace_ids=namespace_ids,
             max_characters=resolved_max_characters,
@@ -509,7 +517,43 @@ class CopilotAnswerService:
 
         return tuple(normalized)
 
-    @staticmethod
+    async def _build_context(
+        self,
+        query: str,
+        *,
+        strategy: object,
+        search_limit: int,
+        namespace_ids: Sequence[int] | None,
+        max_characters: int,
+        max_chunks: int,
+        max_chunks_per_page: int,
+    ):
+        strategy_builder = getattr(
+            self._context_service,
+            "build_context_with_strategy",
+            None,
+        )
+
+        arguments = {
+            "search_limit": search_limit,
+            "namespace_ids": namespace_ids,
+            "max_characters": max_characters,
+            "max_chunks": max_chunks,
+            "max_chunks_per_page": max_chunks_per_page,
+        }
+
+        if callable(strategy_builder):
+            return await strategy_builder(
+                query,
+                strategy=strategy,
+                **arguments,
+            )
+
+        return await self._context_service.build_context(
+            query,
+            **arguments,
+        )
+
     def _build_retrieval_query(
         question: str,
         history: Sequence[CopilotConversationMessage],

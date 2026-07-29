@@ -13,6 +13,9 @@ from app.services.copilot.multi_query_retrieval import (
 from app.services.copilot.query_rewriter import (
     QueryRewrite,
 )
+from app.services.copilot.planner import (
+    RetrievalStrategy,
+)
 from app.services.knowledge.models import (
     KnowledgeSearchResult,
 )
@@ -203,3 +206,195 @@ async def test_rejects_invalid_search_limit() -> None:
             "שאלה",
             search_limit=0,
         )
+
+
+def make_typed_result(
+    *,
+    chunk_id: str,
+    title: str,
+    rank: float,
+    document_type: str,
+    page_id: str | None = None,
+) -> KnowledgeSearchResult:
+    result = make_result(
+        chunk_id=chunk_id,
+        title=title,
+        rank=rank,
+    )
+
+    from dataclasses import replace
+
+    return replace(
+        result,
+        page_id=page_id or result.page_id,
+        document_type=document_type,
+    )
+
+
+@pytest.mark.asyncio
+async def test_checklist_strategy_promotes_checklist() -> None:
+    procedure = make_typed_result(
+        chunk_id="procedure",
+        title="נוהל בקרה",
+        rank=5.0,
+        document_type="נוהל",
+    )
+    checklist = make_typed_result(
+        chunk_id="checklist",
+        title="צ'קליסט פתיחת ותחזוקת סניף",
+        rank=4.0,
+        document_type="צ'קליסט",
+    )
+
+    retrieval = FakeMultiQueryRetrieval(
+        (procedure, checklist)
+    )
+    service = MultiQueryKnowledgeContextService(
+        retrieval
+    )
+
+    context = await service.build_context_with_strategy(
+        "מהן המשימות בתחילת משמרת בוקר?",
+        strategy=RetrievalStrategy.CHECKLIST_FIRST,
+    )
+
+    assert context.sources[0].chunk_id == "checklist"
+
+
+@pytest.mark.asyncio
+async def test_system_strategy_promotes_system_guide() -> None:
+    procedure = make_typed_result(
+        chunk_id="procedure",
+        title="נוהל כללי",
+        rank=5.0,
+        document_type="נוהל",
+    )
+    system = make_typed_result(
+        chunk_id="system",
+        title="מערכת Salesforce",
+        rank=4.0,
+        document_type="מדריך מערכת",
+    )
+
+    retrieval = FakeMultiQueryRetrieval(
+        (procedure, system)
+    )
+    service = MultiQueryKnowledgeContextService(
+        retrieval
+    )
+
+    context = await service.build_context_with_strategy(
+        "איך עובדים עם Accounts בסיילספורס?",
+        strategy=RetrievalStrategy.SYSTEM_FIRST,
+    )
+
+    assert context.sources[0].chunk_id == "system"
+
+
+@pytest.mark.asyncio
+async def test_overview_strategy_prefers_knowledge_page() -> None:
+    procedure = make_typed_result(
+        chunk_id="procedure",
+        title="נוהל ציות",
+        rank=5.0,
+        document_type="נוהל",
+    )
+    overview = make_typed_result(
+        chunk_id="overview",
+        title="ציות ורגולציה",
+        rank=4.0,
+        document_type="פורטל",
+    )
+
+    retrieval = FakeMultiQueryRetrieval(
+        (procedure, overview)
+    )
+    service = MultiQueryKnowledgeContextService(
+        retrieval
+    )
+
+    context = await service.build_context_with_strategy(
+        "מה המשמעות של ציות ורגולציה?",
+        strategy=RetrievalStrategy.OVERVIEW_FIRST,
+    )
+
+    assert context.sources[0].chunk_id == "overview"
+
+
+@pytest.mark.asyncio
+async def test_multi_document_strategy_diversifies_pages() -> None:
+    first_page_one = make_typed_result(
+        chunk_id="page-one-a",
+        title="מסמך ראשון",
+        rank=10.0,
+        document_type="נוהל",
+        page_id="page-one",
+    )
+    second_page_one = make_typed_result(
+        chunk_id="page-one-b",
+        title="מסמך ראשון",
+        rank=9.5,
+        document_type="נוהל",
+        page_id="page-one",
+    )
+    page_two = make_typed_result(
+        chunk_id="page-two-a",
+        title="מסמך שני",
+        rank=9.0,
+        document_type="נוהל",
+        page_id="page-two",
+    )
+
+    retrieval = FakeMultiQueryRetrieval(
+        (
+            first_page_one,
+            second_page_one,
+            page_two,
+        )
+    )
+    service = MultiQueryKnowledgeContextService(
+        retrieval
+    )
+
+    context = await service.build_context_with_strategy(
+        "השווה בין שני המסמכים",
+        strategy=RetrievalStrategy.MULTI_DOCUMENT,
+        max_chunks=3,
+    )
+
+    assert [
+        source.page_id
+        for source in context.sources[:2]
+    ] == [
+        "page-one",
+        "page-two",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_regular_build_context_remains_balanced() -> None:
+    first = make_typed_result(
+        chunk_id="first",
+        title="נוהל",
+        rank=5.0,
+        document_type="נוהל",
+    )
+    second = make_typed_result(
+        chunk_id="second",
+        title="צ'קליסט",
+        rank=4.0,
+        document_type="צ'קליסט",
+    )
+
+    retrieval = FakeMultiQueryRetrieval(
+        (first, second)
+    )
+    service = MultiQueryKnowledgeContextService(
+        retrieval
+    )
+
+    context = await service.build_context(
+        "שאלה כללית",
+    )
+
+    assert context.sources[0].chunk_id == "first"

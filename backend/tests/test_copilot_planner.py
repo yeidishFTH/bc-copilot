@@ -146,3 +146,68 @@ def test_rejects_invalid_classification() -> None:
         ),
     ):
         planner.plan("procedure")  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("question", "expected_strategy"),
+    [
+        (
+            "מהן המשימות בתחילת משמרת בוקר?",
+            RetrievalStrategy.CHECKLIST_FIRST,
+        ),
+        (
+            "איך עובדים עם Accounts בסיילספורס?",
+            RetrievalStrategy.SYSTEM_FIRST,
+        ),
+        (
+            "מה המשמעות של ציות ורגולציה?",
+            RetrievalStrategy.OVERVIEW_FIRST,
+        ),
+        (
+            "איך מטפלים בלקוח?",
+            RetrievalStrategy.DETAILED_PROCEDURE,
+        ),
+    ],
+)
+def test_general_question_uses_query_aware_strategy(
+    question: str,
+    expected_strategy: RetrievalStrategy,
+) -> None:
+    planner = CopilotPlanner()
+
+    plan = planner.plan(
+        classification(
+            CopilotIntent.GENERAL_QUESTION
+        ),
+        question,
+    )
+
+    assert plan.strategy is expected_strategy
+
+
+def test_explicit_intent_overrides_general_query_signals() -> None:
+    planner = CopilotPlanner()
+
+    plan = planner.plan(
+        classification(
+            CopilotIntent.CITATION
+        ),
+        "איפה כתוב בצ'קליסט?",
+    )
+
+    assert (
+        plan.strategy
+        is RetrievalStrategy.PRECISE_CITATION
+    )
+
+
+def test_planner_remains_backward_compatible_without_question() -> None:
+    planner = CopilotPlanner()
+
+    plan = planner.plan(
+        classification(
+            CopilotIntent.GENERAL_QUESTION
+        )
+    )
+
+    assert plan.strategy is RetrievalStrategy.BALANCED
