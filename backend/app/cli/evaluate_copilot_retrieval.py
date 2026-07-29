@@ -10,15 +10,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from app.core.config import Settings, get_settings
 from app.db.session import AsyncSessionFactory
 from app.services.copilot.multi_query_retrieval import (
     MultiQueryRetrievalService,
 )
-from app.services.knowledge.persistence import (
-    KnowledgeSearchRepository,
-)
 from app.services.knowledge.retrieval import (
-    KnowledgeRetrievalService,
+    RetrievalConfigurationError,
+    build_knowledge_retriever,
 )
 
 
@@ -71,6 +70,7 @@ class QuestionEvaluation:
 class EvaluationSummary:
     generated_at: str
     dataset_path: str
+    retrieval_mode: str
     question_count: int
     top_1_accuracy: float
     top_3_accuracy: float
@@ -88,6 +88,20 @@ def build_argument_parser() -> argparse.ArgumentParser:
             "Evaluate intent-aware multi-query retrieval "
             "against a golden question set."
         )
+    )
+
+    parser.add_argument(
+        "--retrieval-mode",
+        choices=(
+            "lexical",
+            "semantic",
+            "hybrid",
+        ),
+        default=None,
+        help=(
+            "Retrieval mode to evaluate. Defaults to "
+            "COPILOT_RETRIEVAL_MODE."
+        ),
     )
 
     parser.add_argument(
@@ -331,6 +345,8 @@ async def run_evaluation(
     per_query_limit: int,
     max_queries: int,
     namespace_ids: tuple[int, ...],
+    retrieval_mode: str | None = None,
+    settings: Settings | None = None,
 ) -> EvaluationSummary:
     golden_questions = load_golden_questions(
         dataset_path
@@ -338,11 +354,35 @@ async def run_evaluation(
 
     evaluations: list[QuestionEvaluation] = []
 
+    base_settings = settings or get_settings()
+    resolved_mode = (
+        retrieval_mode
+        or base_settings.copilot_retrieval_mode
+    )
+
+    evaluation_settings = base_settings.model_copy(
+        update={
+            "copilot_retrieval_mode": resolved_mode,
+        }
+    )
+
+    secret = evaluation_settings.openai_api_key
+    api_key = (
+        secret.get_secret_value().strip()
+        if secret is not None
+        else None
+    )
+
     async with AsyncSessionFactory() as session:
-        repository = KnowledgeSearchRepository(session)
-        retrieval = KnowledgeRetrievalService(
-            repository
-        )
+        try:
+            retrieval = build_knowledge_retriever(
+                session=session,
+                settings=evaluation_settings,
+                api_key=api_key,
+            )
+        except RetrievalConfigurationError as error:
+            raise RuntimeError(str(error)) from error
+
         service = MultiQueryRetrievalService(
             retrieval
         )
@@ -372,6 +412,7 @@ async def run_evaluation(
     return EvaluationSummary(
         generated_at=datetime.now(UTC).isoformat(),
         dataset_path=str(dataset_path),
+        retrieval_mode=resolved_mode,
         question_count=len(evaluations),
         top_1_accuracy=accuracy_percentage(
             evaluation.top_1_hit
@@ -637,6 +678,7 @@ async def async_main() -> int:
         per_query_limit=args.per_query_limit,
         max_queries=args.max_queries,
         namespace_ids=namespace_ids,
+        retrieval_mode=args.retrieval_mode,
     )
 
     print_console_report(summary)
