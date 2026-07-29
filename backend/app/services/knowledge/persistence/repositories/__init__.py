@@ -1,3 +1,7 @@
+from app.services.knowledge.persistence.repositories.embeddings import (
+    KnowledgeEmbeddingCandidate,
+    KnowledgeEmbeddingRepository,
+)
 from app.services.knowledge.persistence.repositories.documents import (
     KnowledgeDocumentRepository,
 )
@@ -9,6 +13,8 @@ from app.services.knowledge.persistence.repositories.sync import (
 )
 
 __all__ = [
+    "KnowledgeEmbeddingCandidate",
+    "KnowledgeEmbeddingRepository",
     "KnowledgeDocumentRepository",
     "KnowledgeSearchRepository",
     "SyncRepository",
