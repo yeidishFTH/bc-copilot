@@ -5,6 +5,11 @@ from app.services.knowledge.retrieval.context import (
     KnowledgeContextSource,
     KnowledgeRetriever,
 )
+from app.services.knowledge.retrieval.factory import (
+    KnowledgeRetriever,
+    RetrievalConfigurationError,
+    build_knowledge_retriever,
+)
 from app.services.knowledge.retrieval.hybrid import (
     HybridKnowledgeRetriever,
     HybridRetrievalService,
@@ -19,6 +24,9 @@ from app.services.knowledge.retrieval.service import (
 )
 
 __all__ = [
+    "KnowledgeRetriever",
+    "RetrievalConfigurationError",
+    "build_knowledge_retriever",
     "HybridKnowledgeRetriever",
     "HybridRetrievalService",
     "KnowledgeVectorSearchReader",

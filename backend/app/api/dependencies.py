@@ -11,20 +11,38 @@ from app.services.copilot import (
     MultiQueryRetrievalService,
     OpenAITextGenerationClient,
 )
-from app.services.knowledge.persistence import (
-    KnowledgeSearchRepository,
-)
 from app.services.knowledge.retrieval import (
     KnowledgeContextService,
-    KnowledgeRetrievalService,
+    KnowledgeRetriever,
+    RetrievalConfigurationError,
+    build_knowledge_retriever,
 )
 
 
 def get_knowledge_retrieval_service(
     session: AsyncSession = Depends(get_db_session),
-) -> KnowledgeRetrievalService:
-    repository = KnowledgeSearchRepository(session)
-    return KnowledgeRetrievalService(repository)
+) -> KnowledgeRetriever:
+    settings = get_settings()
+
+    api_key = (
+        settings.openai_api_key
+        .get_secret_value()
+        .strip()
+        if settings.openai_api_key is not None
+        else None
+    )
+
+    try:
+        return build_knowledge_retriever(
+            session=session,
+            settings=settings,
+            api_key=api_key,
+        )
+    except RetrievalConfigurationError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+        ) from error
 
 
 def get_copilot_answer_service(
@@ -50,10 +68,18 @@ def get_copilot_answer_service(
             detail="Copilot text generation is not configured",
         )
 
-    search_repository = KnowledgeSearchRepository(session)
-    retrieval_service = KnowledgeRetrievalService(
-        search_repository
-    )
+    try:
+        retrieval_service = build_knowledge_retriever(
+            session=session,
+            settings=settings,
+            api_key=api_key,
+        )
+    except RetrievalConfigurationError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+        ) from error
+
     multi_query_retrieval = (
         MultiQueryRetrievalService(
             retrieval_service

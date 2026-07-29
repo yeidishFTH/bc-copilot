@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,6 +27,12 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-small"
     openai_embedding_dimensions: int = 1536
     openai_embedding_batch_size: int = 100
+
+    copilot_retrieval_mode: Literal[
+        "lexical",
+        "semantic",
+        "hybrid",
+    ] = "lexical"
 
     model_config = SettingsConfigDict(
         env_file=".env",
