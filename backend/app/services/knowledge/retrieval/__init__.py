@@ -5,6 +5,10 @@ from app.services.knowledge.retrieval.context import (
     KnowledgeContextSource,
     KnowledgeRetriever,
 )
+from app.services.knowledge.retrieval.hybrid import (
+    HybridKnowledgeRetriever,
+    HybridRetrievalService,
+)
 from app.services.knowledge.retrieval.semantic import (
     KnowledgeVectorSearchReader,
     SemanticRetrievalService,
@@ -15,6 +19,8 @@ from app.services.knowledge.retrieval.service import (
 )
 
 __all__ = [
+    "HybridKnowledgeRetriever",
+    "HybridRetrievalService",
     "KnowledgeVectorSearchReader",
     "SemanticRetrievalService",
     "KnowledgeContext",
