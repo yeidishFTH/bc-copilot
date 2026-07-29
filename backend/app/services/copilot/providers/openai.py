@@ -2,20 +2,17 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator, Mapping
-from typing import Any
 
 import httpx
 
-
-class OpenAIConfigurationError(RuntimeError):
-    """Raised when the OpenAI client configuration is invalid."""
-
-
-class OpenAIResponseError(RuntimeError):
-    """Raised when OpenAI rejects a request or returns invalid data."""
+from app.services.openai import (
+    OpenAIClientBase,
+    OpenAIConfigurationError,
+    OpenAIResponseError,
+)
 
 
-class OpenAITextGenerationClient:
+class OpenAITextGenerationClient(OpenAIClientBase):
     """Generate grounded text through the OpenAI Responses API."""
 
     DEFAULT_BASE_URL = "https://api.openai.com"
@@ -30,37 +27,26 @@ class OpenAITextGenerationClient:
         base_url: str = DEFAULT_BASE_URL,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
-        normalized_api_key = api_key.strip()
-        normalized_model = model.strip()
-        normalized_base_url = base_url.rstrip("/")
+        super().__init__(
+            api_key=api_key,
+            timeout_seconds=timeout_seconds,
+            base_url=base_url,
+            transport=transport,
+        )
 
-        if not normalized_api_key:
+        if not isinstance(model, str):
             raise OpenAIConfigurationError(
-                "OpenAI API key cannot be empty"
+                "OpenAI model must be a string"
             )
+
+        normalized_model = model.strip()
 
         if not normalized_model:
             raise OpenAIConfigurationError(
                 "OpenAI model cannot be empty"
             )
 
-        if timeout_seconds <= 0:
-            raise OpenAIConfigurationError(
-                "OpenAI timeout must be greater than zero"
-            )
-
-        if not normalized_base_url.startswith(
-            ("https://", "http://")
-        ):
-            raise OpenAIConfigurationError(
-                "OpenAI base URL must be an absolute HTTP URL"
-            )
-
-        self._api_key = normalized_api_key
         self._model = normalized_model
-        self._timeout_seconds = timeout_seconds
-        self._base_url = normalized_base_url
-        self._transport = transport
 
     @property
     def model(self) -> str:
@@ -81,41 +67,20 @@ class OpenAITextGenerationClient:
             field_name="user_prompt",
         )
 
-        async with self._build_client() as client:
-            try:
-                response = await client.post(
-                    self.RESPONSES_PATH,
-                    json=self._build_request_body(
-                        system_prompt=normalized_system_prompt,
-                        user_prompt=normalized_user_prompt,
-                        stream=False,
-                    ),
-                )
-            except httpx.TimeoutException as error:
-                raise OpenAIResponseError(
-                    "OpenAI request timed out"
-                ) from error
-            except httpx.RequestError as error:
-                raise OpenAIResponseError(
-                    "OpenAI could not be reached"
-                ) from error
-
-        if response.is_error:
-            raise OpenAIResponseError(
-                self._format_http_error(response)
-            )
-
-        try:
-            payload = response.json()
-        except ValueError as error:
-            raise OpenAIResponseError(
-                "OpenAI returned invalid JSON"
-            ) from error
-
-        if not isinstance(payload, Mapping):
-            raise OpenAIResponseError(
-                "OpenAI returned a non-object response"
-            )
+        payload = await self._post_json(
+            self.RESPONSES_PATH,
+            body=self._build_request_body(
+                system_prompt=normalized_system_prompt,
+                user_prompt=normalized_user_prompt,
+                stream=False,
+            ),
+            timeout_message=(
+                "OpenAI request timed out"
+            ),
+            connection_message=(
+                "OpenAI could not be reached"
+            ),
+        )
 
         return self._extract_output_text(payload)
 
@@ -203,23 +168,6 @@ class OpenAITextGenerationClient:
                 raise OpenAIResponseError(
                     "OpenAI streaming connection failed"
                 ) from error
-
-    def _build_client(self) -> httpx.AsyncClient:
-        client_arguments: dict[str, Any] = {
-            "base_url": self._base_url,
-            "timeout": httpx.Timeout(
-                self._timeout_seconds
-            ),
-            "headers": {
-                "Authorization": f"Bearer {self._api_key}",
-                "Content-Type": "application/json",
-            },
-        }
-
-        if self._transport is not None:
-            client_arguments["transport"] = self._transport
-
-        return httpx.AsyncClient(**client_arguments)
 
     def _build_request_body(
         self,
@@ -310,35 +258,6 @@ class OpenAITextGenerationClient:
             )
 
         return normalized
-
-    @staticmethod
-    def _format_http_error(
-        response: httpx.Response,
-    ) -> str:
-        message = (
-            f"OpenAI returned HTTP "
-            f"{response.status_code}"
-        )
-
-        try:
-            payload = response.json()
-        except ValueError:
-            return message
-
-        if not isinstance(payload, Mapping):
-            return message
-
-        error = payload.get("error")
-
-        if not isinstance(error, Mapping):
-            return message
-
-        detail = error.get("message")
-
-        if isinstance(detail, str) and detail.strip():
-            return f"{message}: {detail.strip()}"
-
-        return message
 
     @staticmethod
     def _format_stream_error(
