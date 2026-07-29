@@ -196,6 +196,8 @@ async def test_store_embeddings_executes_bulk_update() -> None:
         "knowledge_chunks.id = "
         "%(target_chunk_id)s"
     ) in sql
+    assert statement.table.name == "knowledge_chunks"
+    assert statement.table is not None
 
     assert isinstance(parameters, list)
     assert len(parameters) == 2

@@ -129,10 +129,12 @@ class KnowledgeEmbeddingRepository:
         if not normalized:
             return 0
 
+        chunk_table = KnowledgeChunk.__table__
+
         statement = (
-            update(KnowledgeChunk)
+            update(chunk_table)
             .where(
-                KnowledgeChunk.id
+                chunk_table.c.id
                 == bindparam("target_chunk_id")
             )
             .values(
