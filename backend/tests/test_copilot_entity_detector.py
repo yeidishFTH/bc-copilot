@@ -249,3 +249,37 @@ def test_detects_employee_onboarding(
         CopilotEntity.EMPLOYEE_ONBOARDING
         in detection.entity_ids
     )
+
+
+@pytest.mark.parametrize(
+    ("question", "expected"),
+    [
+        (
+            "מה עושים כשצריך לפנות את הסניף בחירום?",
+            CopilotEntity.EMERGENCY_EVACUATION,
+        ),
+        (
+            "איך חונך מדווח על ההתקדמות של עובד חדש?",
+            CopilotEntity.MENTOR_REPORT,
+        ),
+        (
+            "מה מצופה מנציג במהלך המשמרת?",
+            CopilotEntity.REPRESENTATIVE_ROLE,
+        ),
+        (
+            "איך עובדים עם קופון ללקוח?",
+            CopilotEntity.COUPON,
+        ),
+        (
+            "איפה כתובים הכללים למתן הנחה באמצעות קופון?",
+            CopilotEntity.COUPON,
+        ),
+    ],
+)
+def test_detects_new_retrieval_coverage_entities(
+    question: str,
+    expected: CopilotEntity,
+) -> None:
+    detection = EntityDetector().detect(question)
+
+    assert expected in detection.entity_ids

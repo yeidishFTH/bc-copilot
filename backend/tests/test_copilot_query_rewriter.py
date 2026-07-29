@@ -486,3 +486,77 @@ def test_foreign_customer_expansion_order(
         "דגשים בעת רישום לקוחות זרים",
         "דרכון",
     )
+
+
+@pytest.mark.parametrize(
+    ("question", "expected_entity", "expected_title"),
+    [
+        (
+            "מה עושים כשצריך לפנות את הסניף בחירום?",
+            CopilotEntity.EMERGENCY_EVACUATION,
+            "נוהל חירום - פינוי בזמן חירום",
+        ),
+        (
+            "איך חונך מדווח על ההתקדמות של עובד חדש?",
+            CopilotEntity.MENTOR_REPORT,
+            "טופס דיווח חונך",
+        ),
+        (
+            "מה מצופה מנציג במהלך המשמרת?",
+            CopilotEntity.REPRESENTATIVE_ROLE,
+            "תפקיד הנציג",
+        ),
+        (
+            "איך עובדים עם קופון ללקוח?",
+            CopilotEntity.COUPON,
+            "נוהל קופונים",
+        ),
+        (
+            "איפה כתובים הכללים למתן הנחה באמצעות קופון?",
+            CopilotEntity.COUPON,
+            "נוהל קופונים",
+        ),
+    ],
+)
+def test_new_coverage_expansions_fit_query_budget(
+    rewriter: QueryRewriter,
+    question: str,
+    expected_entity: CopilotEntity,
+    expected_title: str,
+) -> None:
+    result = rewriter.rewrite(question)
+
+    assert expected_entity in result.detected_entities
+    assert expected_title in result.search_queries[:5]
+
+
+def test_branch_equipment_prioritizes_establishment_procedure(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "איזה ציוד צריך להכין כשפותחים סניף חדש?"
+    )
+
+    assert result.search_queries[:5] == (
+        "איזה ציוד צריך להכין כשפותחים סניף חדש?",
+        "נוהל הקמת סניף",
+        "קניית ציוד לסניף",
+        "ציוד להקמת סניף",
+        "פתיחת סניף חדש",
+    )
+
+
+def test_mentor_report_outranks_generic_onboarding_queries(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "איך חונך מדווח על ההתקדמות של עובד חדש?"
+    )
+
+    assert result.search_queries[:5] == (
+        "איך חונך מדווח על ההתקדמות של עובד חדש?",
+        "טופס דיווח חונך",
+        "דיווח חונך",
+        "משוב חונך",
+        "התקדמות חניך",
+    )

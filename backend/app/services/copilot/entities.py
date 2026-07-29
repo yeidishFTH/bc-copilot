@@ -29,6 +29,10 @@ class CopilotEntity(StrEnum):
     CASH_COUNT = "cash_count"
     WHATSAPP = "whatsapp"
     EMPLOYEE_ONBOARDING = "employee_onboarding"
+    EMERGENCY_EVACUATION = "emergency_evacuation"
+    MENTOR_REPORT = "mentor_report"
+    REPRESENTATIVE_ROLE = "representative_role"
+    COUPON = "coupon"
 
 
 @dataclass(frozen=True, slots=True)
@@ -551,6 +555,142 @@ class EntityDetector:
                 ),
             ),
             confidence=0.97,
+        ),
+        _EntityRule(
+            entity=CopilotEntity.EMERGENCY_EVACUATION,
+            phrases=(
+                "פינוי בזמן חירום",
+                "פינוי סניף בחירום",
+                "לפנות את הסניף",
+                "פינוי הסניף",
+                "יציאה מהסניף בחירום",
+                "מרחב מוגן",
+                "בזמן אזעקה",
+                "בזמן חירום",
+            ),
+            token_groups=(
+                frozenset(
+                    {
+                        "חירום",
+                        "אזעקה",
+                        "התרעה",
+                        "פינוי",
+                        "לפנות",
+                    }
+                ),
+                frozenset(
+                    {
+                        "סניף",
+                        "הסניף",
+                        "מרחב",
+                        "מוגן",
+                        "יוצאים",
+                        "יציאה",
+                    }
+                ),
+            ),
+            confidence=0.98,
+        ),
+        _EntityRule(
+            entity=CopilotEntity.MENTOR_REPORT,
+            phrases=(
+                "טופס דיווח חונך",
+                "דיווח חונך",
+                "משוב חונך",
+                "הערכת חניך",
+                "התקדמות החניך",
+                "התקדמות של עובד חדש",
+                "חונך מדווח",
+                "חונך ממלא",
+            ),
+            token_groups=(
+                frozenset(
+                    {
+                        "חונך",
+                        "חונכת",
+                        "חניך",
+                        "חניכה",
+                    }
+                ),
+                frozenset(
+                    {
+                        "דיווח",
+                        "מדווח",
+                        "משוב",
+                        "הערכה",
+                        "התקדמות",
+                        "טופס",
+                    }
+                ),
+            ),
+            confidence=0.98,
+        ),
+        _EntityRule(
+            entity=CopilotEntity.REPRESENTATIVE_ROLE,
+            phrases=(
+                "תפקיד הנציג",
+                "תפקיד נציג השירות",
+                "אחריות נציג השירות",
+                "תחומי האחריות של נציג",
+                "מה מצופה מנציג",
+                "ציפיות מנציג",
+                "משימות נציג",
+                "נציג במהלך המשמרת",
+            ),
+            token_groups=(
+                frozenset(
+                    {
+                        "נציג",
+                        "נציגת",
+                        "הנציג",
+                        "נציגים",
+                    }
+                ),
+                frozenset(
+                    {
+                        "תפקיד",
+                        "אחריות",
+                        "מצופה",
+                        "ציפיות",
+                        "משימות",
+                        "משמרת",
+                    }
+                ),
+            ),
+            confidence=0.97,
+        ),
+        _EntityRule(
+            entity=CopilotEntity.COUPON,
+            phrases=(
+                "נוהל קופונים",
+                "קופון ללקוח",
+                "קופוני הנחה",
+                "קוד הנחה",
+                "הנחה באמצעות קופון",
+                "שימוש בקופון",
+                "כללי שימוש בקופון",
+                "קוד קופון",
+            ),
+            token_groups=(
+                frozenset(
+                    {
+                        "קופון",
+                        "קופונים",
+                        "קוד",
+                        "קודי",
+                    }
+                ),
+                frozenset(
+                    {
+                        "הנחה",
+                        "הטבה",
+                        "לקוח",
+                        "שימוש",
+                        "כללים",
+                    }
+                ),
+            ),
+            confidence=0.99,
         ),
         _EntityRule(
             entity=CopilotEntity.BRANCH,
