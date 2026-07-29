@@ -6,6 +6,7 @@ from app.services.knowledge.persistence.repositories import (
     KnowledgeEmbeddingCandidate,
     KnowledgeEmbeddingRepository,
     KnowledgeSearchRepository,
+    KnowledgeVectorSearchRepository,
     SyncRepository,
 )
 from app.services.knowledge.persistence.results import (
@@ -21,5 +22,6 @@ __all__ = [
     "KnowledgeEmbeddingRepository",
     "KnowledgePersistenceMapper",
     "KnowledgeSearchRepository",
+    "KnowledgeVectorSearchRepository",
     "SyncRepository",
 ]

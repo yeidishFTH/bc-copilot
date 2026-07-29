@@ -8,6 +8,9 @@ from app.services.knowledge.persistence.repositories.documents import (
 from app.services.knowledge.persistence.repositories.search import (
     KnowledgeSearchRepository,
 )
+from app.services.knowledge.persistence.repositories.vector_search import (
+    KnowledgeVectorSearchRepository,
+)
 from app.services.knowledge.persistence.repositories.sync import (
     SyncRepository,
 )
@@ -17,5 +20,6 @@ __all__ = [
     "KnowledgeEmbeddingRepository",
     "KnowledgeDocumentRepository",
     "KnowledgeSearchRepository",
+    "KnowledgeVectorSearchRepository",
     "SyncRepository",
 ]
