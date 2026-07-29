@@ -1,3 +1,8 @@
+from app.services.knowledge.embeddings import (
+    DeterministicEmbeddingGenerator,
+    EmbeddingGenerator,
+    EmbeddingVector,
+)
 from app.services.knowledge.exceptions import (
     KnowledgeAuthenticationError,
     KnowledgeConnectionError,
@@ -25,6 +30,9 @@ from app.services.knowledge.retrieval import (
 )
 
 __all__ = [
+    "DeterministicEmbeddingGenerator",
+    "EmbeddingGenerator",
+    "EmbeddingVector",
     "KnowledgeContext",
     "KnowledgeContextBuilder",
     "KnowledgeContextService",
