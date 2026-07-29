@@ -28,6 +28,7 @@ class CopilotEntity(StrEnum):
     DAY_CLOSING = "day_closing"
     CASH_COUNT = "cash_count"
     WHATSAPP = "whatsapp"
+    EMPLOYEE_ONBOARDING = "employee_onboarding"
 
 
 @dataclass(frozen=True, slots=True)
@@ -507,6 +508,49 @@ class EntityDetector:
                 "שיחות whatsapp",
             ),
             confidence=0.99,
+        ),
+        _EntityRule(
+            entity=CopilotEntity.EMPLOYEE_ONBOARDING,
+            phrases=(
+                "קליטת עובד",
+                "קליטת עובד חדש",
+                "עובד חדש",
+                "עובדת חדשה",
+                "חפיפת עובד",
+                "חפיפה לעובד",
+                "הדרכת עובד חדש",
+                "הכשרת עובד חדש",
+                "לפני הגעת עובד",
+                "לפני שהעובד מגיע",
+                "onboarding",
+                "employee onboarding",
+                "new employee",
+            ),
+            token_groups=(
+                frozenset(
+                    {
+                        "עובד",
+                        "עובדת",
+                        "עובדים",
+                        "עובדות",
+                    }
+                ),
+                frozenset(
+                    {
+                        "חדש",
+                        "חדשה",
+                        "חדשים",
+                        "חדשות",
+                        "קליטה",
+                        "קליטת",
+                        "חפיפה",
+                        "חפיפת",
+                        "הדרכה",
+                        "הכשרה",
+                    }
+                ),
+            ),
+            confidence=0.97,
         ),
         _EntityRule(
             entity=CopilotEntity.BRANCH,

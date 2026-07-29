@@ -228,3 +228,24 @@ def test_detects_branch_opening_from_morning_shift(
     assert detection.contains(
         CopilotEntity.BRANCH_OPENING
     )
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "מה התהליך לקליטת עובד חדש?",
+        "איך קולטים עובד חדש?",
+        "מה צריך לעשות לפני שעובד חדש מגיע?",
+        "איך מבצעים חפיפה לעובדת חדשה?",
+        "employee onboarding",
+    ],
+)
+def test_detects_employee_onboarding(
+    question: str,
+) -> None:
+    detection = EntityDetector().detect(question)
+
+    assert (
+        CopilotEntity.EMPLOYEE_ONBOARDING
+        in detection.entity_ids
+    )

@@ -394,3 +394,53 @@ def test_morning_shift_adds_branch_opening_checklist(
         CopilotEntity.BRANCH_OPENING
         in result.detected_entities
     )
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "מה התהליך לקליטת עובד חדש?",
+        "איך קולטים עובד חדש?",
+        "מה צריך לעשות לפני שעובד חדש מגיע?",
+        "איך מבצעים חפיפה לעובדת חדשה?",
+        "employee onboarding",
+    ],
+)
+def test_employee_onboarding_expands_queries(
+    rewriter: QueryRewriter,
+    question: str,
+) -> None:
+    result = rewriter.rewrite(question)
+
+    assert (
+        CopilotEntity.EMPLOYEE_ONBOARDING
+        in result.detected_entities
+    )
+    assert (
+        "נוהל קליטת עובד"
+        in result.search_queries
+    )
+    assert (
+        "קליטת עובד חדש"
+        in result.search_queries
+    )
+    assert (
+        len(result.search_queries) >= 3
+    )
+
+
+def test_employee_onboarding_document_name_is_detected(
+    rewriter: QueryRewriter,
+) -> None:
+    result = rewriter.rewrite(
+        "סכם לי את נוהל קליטת עובד"
+    )
+
+    assert (
+        "נוהל קליטת עובד"
+        in result.matched_document_names
+    )
+    assert (
+        "נוהל קליטת עובד"
+        in result.search_queries
+    )
