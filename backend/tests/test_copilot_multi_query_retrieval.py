@@ -570,3 +570,133 @@ async def test_checklist_query_prefers_checklist_document() -> None:
     )
 
     assert result.results[0].chunk_id == "checklist"
+
+
+@pytest.mark.asyncio
+async def test_matched_alias_title_can_overcome_large_raw_rank_gap() -> None:
+    intended = make_result(
+        chunk_id="company-background",
+        title="רקע כללי",
+        rank=5.4,
+    )
+    accidental = make_result(
+        chunk_id="audit-procedure",
+        title="נוהל בקרה וביקורת",
+        rank=12.0,
+        document_type="נוהל",
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "מה הרקע הכללי על Bitcoin Change?": (
+                intended,
+                accidental,
+            ),
+            "רקע כללי": (
+                intended,
+            ),
+            "Bitcoin Change": (
+                intended,
+            ),
+            "איך השירות עובד בפועל": (
+                intended,
+                accidental,
+            ),
+            "סקירה כללית על החברה": (
+                accidental,
+                intended,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "מה הרקע הכללי על Bitcoin Change?",
+        max_queries=5,
+    )
+
+    assert result.rewrite.matched_aliases == (
+        "רקע כללי",
+    )
+    assert result.results[0].chunk_id == (
+        "company-background"
+    )
+    assert (
+        result.results[0].rank
+        > result.results[1].rank
+    )
+
+
+@pytest.mark.asyncio
+async def test_matched_document_name_receives_intent_title_bonus() -> None:
+    intended = make_result(
+        chunk_id="explicit-document",
+        title="נוהל קופונים",
+        rank=2.0,
+    )
+    generic = make_result(
+        chunk_id="generic-document",
+        title="מסמך אחר",
+        rank=6.0,
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "סכם לי את נוהל קופונים": (
+                generic,
+                intended,
+            ),
+            "נוהל קופונים": (
+                intended,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "סכם לי את נוהל קופונים",
+        max_queries=2,
+    )
+
+    assert result.rewrite.matched_document_names == (
+        "נוהל קופונים",
+    )
+    assert result.results[0].chunk_id == (
+        "explicit-document"
+    )
+
+
+@pytest.mark.asyncio
+async def test_unrelated_title_gets_no_intent_bonus() -> None:
+    expected = make_result(
+        chunk_id="expected",
+        title="רקע כללי",
+        rank=2.0,
+    )
+    unrelated = make_result(
+        chunk_id="unrelated",
+        title="נוהל בקרה וביקורת",
+        rank=8.5,
+    )
+
+    retrieval = FakeRetrieval(
+        {
+            "שאלה לא מזוהה": (
+                unrelated,
+                expected,
+            ),
+        }
+    )
+
+    service = MultiQueryRetrievalService(retrieval)
+
+    result = await service.search(
+        "שאלה לא מזוהה",
+        max_queries=1,
+    )
+
+    assert result.rewrite.matched_aliases == ()
+    assert result.rewrite.matched_document_names == ()
+    assert result.results[0].chunk_id == "unrelated"

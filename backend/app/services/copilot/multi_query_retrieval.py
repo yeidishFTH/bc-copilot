@@ -49,6 +49,7 @@ class _AggregatedCandidate:
     appeared_in_original_query: bool
     query_match_bonus: float
     semantic_mode_bonus: float
+    intent_title_bonus: float
 
 
 class MultiQueryRetrievalService:
@@ -78,6 +79,7 @@ class MultiQueryRetrievalService:
     EARLY_QUERY_BONUS = 0.04
 
     EXACT_TITLE_MATCH_BONUS = 3.00
+    INTENT_TITLE_MATCH_BONUS = 6.00
     TITLE_PHRASE_MATCH_BONUS = 2.20
     HIGH_TITLE_COVERAGE_BONUS = 1.50
     MEDIUM_TITLE_COVERAGE_BONUS = 0.80
@@ -274,6 +276,12 @@ class MultiQueryRetrievalService:
                                     query,
                                 )
                             ),
+                            intent_title_bonus=(
+                                self._intent_title_bonus(
+                                    result,
+                                    rewrite,
+                                )
+                            ),
                         )
                     )
                     continue
@@ -365,9 +373,46 @@ class MultiQueryRetrievalService:
             + early_query_bonus
             + candidate.query_match_bonus
             + candidate.semantic_mode_bonus
+            + candidate.intent_title_bonus
             + authority_bonus,
             6,
         )
+
+    @classmethod
+    def _intent_title_bonus(
+        cls,
+        result: KnowledgeSearchResult,
+        rewrite: QueryRewrite,
+    ) -> float:
+        """
+        Reward exact agreement between detected query intent and title.
+
+        Query rewriting has already resolved domain phrases into
+        canonical aliases and explicit document names. This bonus uses
+        that existing information without adding entity-specific
+        ranking rules.
+        """
+
+        normalized_title = cls._normalize_match_text(
+            result.title
+        )
+
+        intended_titles = {
+            cls._normalize_match_text(value)
+            for value in (
+                *rewrite.matched_document_names,
+                *rewrite.matched_aliases,
+            )
+            if value.strip()
+        }
+
+        if (
+            normalized_title
+            and normalized_title in intended_titles
+        ):
+            return cls.INTENT_TITLE_MATCH_BONUS
+
+        return 0.0
 
     @classmethod
     def _semantic_mode_bonus(
