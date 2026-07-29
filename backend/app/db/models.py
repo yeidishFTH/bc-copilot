@@ -17,6 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -207,6 +208,7 @@ class KnowledgeChunk(Base):
     token_count: Mapped[int | None] = mapped_column(Integer)
     content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     search_vector: Mapped[str | None] = mapped_column(TSVECTOR)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536))
 
     revision: Mapped[KnowledgeRevision] = relationship(back_populates="chunks")
 
