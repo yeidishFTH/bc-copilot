@@ -1,5 +1,7 @@
 "use client";
 
+import { AuthGate } from "../components/auth/AuthGate";
+
 import { useEffect, FormEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -1017,7 +1019,7 @@ function SourceCard({
 }
 
 
-export default function Home() {
+function WorkspaceHome() {
   const [question, setQuestion] = useState("");
   const [conversation, setConversation] = useState<
     ConversationEntry[]
@@ -1068,6 +1070,7 @@ export default function Home() {
         `${API_BASE_URL}/api/copilot/ask/stream`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -1082,6 +1085,28 @@ export default function Home() {
           }),
         },
       );
+
+      if (response.status === 401) {
+        window.dispatchEvent(
+          new Event("bc-auth-required"),
+        );
+
+        throw new Error(
+          "ההתחברות הסתיימה.",
+        );
+      }
+
+      if (response.status === 403) {
+        window.dispatchEvent(
+          new Event(
+            "bc-password-change-required",
+          ),
+        );
+
+        throw new Error(
+          "יש לבחור סיסמה חדשה.",
+        );
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -1546,5 +1571,13 @@ export default function Home() {
         </footer>
       </section>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthGate>
+      <WorkspaceHome />
+    </AuthGate>
   );
 }

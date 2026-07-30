@@ -85,10 +85,12 @@
 
   const iframe = document.createElement("iframe");
   iframe.className = "bcw-frame";
-  iframe.src = chrome.runtime.getURL("sidepanel.html");
+  iframe.src =
+    "http://localhost:3000/?bc_workspace=floating";
   iframe.title = "BC Workspace";
   iframe.allow =
     "clipboard-read; clipboard-write; microphone";
+  iframe.referrerPolicy = "no-referrer";
 
   panel.append(header, context, iframe);
   wrapper.append(panel, bubble);
