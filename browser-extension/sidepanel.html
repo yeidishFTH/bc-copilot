@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <title>BC Workspace</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+
+  <body>
+    <div id="workspace-shell">
+      <div id="workspace-loading">
+        <strong>BC Workspace</strong>
+        <span>טוען את סביבת העבודה…</span>
+      </div>
+
+      <iframe
+        id="workspace-frame"
+        src="http://localhost:3000"
+        title="BC Workspace"
+        allow="clipboard-read; clipboard-write; microphone"
+      ></iframe>
+
+      <div id="workspace-error" hidden>
+        <strong>BC Workspace אינו זמין כרגע</strong>
+        <p>
+          ודא שה־Frontend פועל בכתובת
+          <code>http://localhost:3000</code>.
+        </p>
+        <button id="workspace-retry" type="button">
+          נסה שוב
+        </button>
+      </div>
+    </div>
+
+    <script src="sidepanel.js"></script>
+  </body>
+</html>
