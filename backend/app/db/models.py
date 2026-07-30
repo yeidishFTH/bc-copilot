@@ -491,3 +491,67 @@ class UserAccount(Base):
     branch: Mapped[Branch | None] = relationship(
         back_populates="accounts",
     )
+    sessions: Mapped[list["AuthSession"]] = relationship(
+        back_populates="account",
+        cascade="all, delete-orphan",
+    )
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+    __table_args__ = (
+        UniqueConstraint("token_hash"),
+        Index(
+            "ix_auth_sessions_account_expires",
+            "account_id",
+            "expires_at",
+        ),
+        Index(
+            "ix_auth_sessions_active_expires",
+            "revoked_at",
+            "expires_at",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "user_accounts.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+    )
+    token_hash: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    last_seen_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+    created_ip: Mapped[str | None] = mapped_column(
+        String(64),
+    )
+    user_agent: Mapped[str | None] = mapped_column(
+        Text,
+    )
+
+    account: Mapped[UserAccount] = relationship(
+        back_populates="sessions",
+    )

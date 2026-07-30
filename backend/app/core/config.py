@@ -16,6 +16,17 @@ class Settings(BaseSettings):
     )
     database_echo: bool = False
 
+    auth_cookie_name: str = "bc_workspace_session"
+    auth_session_hours: int = 12
+    auth_cookie_secure: bool = False
+    auth_cookie_samesite: Literal[
+        "lax",
+        "strict",
+        "none",
+    ] = "lax"
+    auth_max_failed_attempts: int = 5
+    auth_lock_minutes: int = 15
+
     mediawiki_api_url: str = "https://wiki.bitcoinchange.co.il/api.php"
     mediawiki_bot_username: str | None = None
     mediawiki_bot_password: SecretStr | None = None
