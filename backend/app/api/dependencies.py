@@ -100,3 +100,31 @@ def get_copilot_answer_service(
         context_service=context_service,
         generator=generator,
     )
+
+
+def get_authentication_service(
+    session: AsyncSession = Depends(
+        get_db_session
+    ),
+) -> "AuthenticationService":
+    from app.services.auth import (
+        AuthenticationService,
+        PasswordService,
+        SessionTokenService,
+    )
+
+    settings = get_settings()
+
+    return AuthenticationService(
+        session=session,
+        password_service=PasswordService(),
+        token_service=SessionTokenService(
+            session_hours=(
+                settings.auth_session_hours
+            ),
+        ),
+        max_failed_attempts=(
+            settings.auth_max_failed_attempts
+        ),
+        lock_minutes=settings.auth_lock_minutes,
+    )
