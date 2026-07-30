@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 import json
 from fastapi.testclient import TestClient
 
@@ -12,6 +14,8 @@ from app.services.copilot import (
     CopilotSource,
 )
 
+
+pytestmark = pytest.mark.usefixtures("workspace_access_override")
 
 class FakeCopilotService:
     async def answer(

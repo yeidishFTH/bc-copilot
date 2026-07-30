@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.api.auth_dependencies import require_workspace_access
 from app.api.dependencies import get_knowledge_retrieval_service
 from app.models.knowledge import (
     KnowledgeSearchItem,
@@ -15,6 +16,9 @@ from app.services.knowledge.retrieval import (
 router = APIRouter(
     prefix="/knowledge",
     tags=["knowledge"],
+    dependencies=[
+        Depends(require_workspace_access),
+    ],
 )
 
 

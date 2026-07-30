@@ -9,6 +9,9 @@ from fastapi import (
     status,
 )
 
+from app.api.auth_dependencies import (
+    current_account,
+)
 from app.api.dependencies import (
     get_authentication_service,
 )
@@ -28,7 +31,6 @@ from app.services.auth import (
     AuthenticationService,
     InvalidCredentialsError,
     PasswordChangeError,
-    SessionInvalidError,
 )
 
 
@@ -91,37 +93,6 @@ def delete_session_cookie(
         httponly=True,
         samesite=settings.auth_cookie_samesite,
     )
-
-
-async def current_account(
-    request: Request,
-    service: AuthenticationService = Depends(
-        get_authentication_service
-    ),
-) -> UserAccount:
-    settings = get_settings()
-    session_token = request.cookies.get(
-        settings.auth_cookie_name
-    )
-
-    if not session_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        )
-
-    try:
-        return await service.get_account_for_token(
-            session_token
-        )
-    except (
-        SessionInvalidError,
-        AccountInactiveError,
-    ) as error:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        ) from error
 
 
 @router.post(

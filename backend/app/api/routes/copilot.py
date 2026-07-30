@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
+from app.api.auth_dependencies import require_workspace_access
 from app.api.dependencies import (
     get_copilot_answer_service,
 )
@@ -25,6 +26,9 @@ from app.services.copilot import (
 router = APIRouter(
     prefix="/copilot",
     tags=["copilot"],
+    dependencies=[
+        Depends(require_workspace_access),
+    ],
 )
 
 

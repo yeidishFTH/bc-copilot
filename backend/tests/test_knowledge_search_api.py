@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from collections.abc import Sequence
 
 from fastapi.testclient import TestClient
@@ -8,6 +10,8 @@ from app.api.dependencies import get_knowledge_retrieval_service
 from app.main import app
 from app.services.knowledge.models import KnowledgeSearchResult
 
+
+pytestmark = pytest.mark.usefixtures("workspace_access_override")
 
 class FakeKnowledgeRetrievalService:
     def __init__(

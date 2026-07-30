@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import pytest
+
 from fastapi.testclient import TestClient
 
 from app.main import app
 
+
+pytestmark = pytest.mark.usefixtures("workspace_access_override")
 
 def test_live_api_exposes_claim_level_citations() -> None:
     with TestClient(app) as client:
