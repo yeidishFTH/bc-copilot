@@ -311,3 +311,183 @@ class SyncPageEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+class AccountType(str, enum.Enum):
+    branch = "branch"
+    individual = "individual"
+
+
+class AccountRole(str, enum.Enum):
+    branch_user = "branch_user"
+    management = "management"
+    administrator = "administrator"
+
+
+class Branch(Base):
+    __tablename__ = "branches"
+    __table_args__ = (
+        UniqueConstraint("code"),
+        UniqueConstraint("email"),
+        Index("ix_branches_active_name", "is_active", "name"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    code: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(
+        String(120),
+        nullable=False,
+    )
+    email: Mapped[str] = mapped_column(
+        String(320),
+        nullable=False,
+    )
+    address: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    phone: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+    )
+    weekday_hours: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    friday_hours: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    is_accessible: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    accounts: Mapped[list["UserAccount"]] = relationship(
+        back_populates="branch",
+    )
+
+
+class UserAccount(Base):
+    __tablename__ = "user_accounts"
+    __table_args__ = (
+        UniqueConstraint("email"),
+        Index(
+            "ix_user_accounts_active_type",
+            "is_active",
+            "account_type",
+        ),
+        Index(
+            "ix_user_accounts_branch_role",
+            "branch_id",
+            "role",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    email: Mapped[str] = mapped_column(
+        String(320),
+        nullable=False,
+    )
+    display_name: Mapped[str] = mapped_column(
+        String(160),
+        nullable=False,
+    )
+    account_type: Mapped[AccountType] = mapped_column(
+        Enum(
+            AccountType,
+            name="account_type",
+            native_enum=False,
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
+    role: Mapped[AccountRole] = mapped_column(
+        Enum(
+            AccountRole,
+            name="account_role",
+            native_enum=False,
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
+    branch_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "branches.id",
+            ondelete="RESTRICT",
+        ),
+    )
+    password_hash: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    must_change_password: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+    password_changed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+    failed_login_attempts: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+    )
+    locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    branch: Mapped[Branch | None] = relationship(
+        back_populates="accounts",
+    )
