@@ -1,0 +1,20 @@
+{$APP_DOMAIN} {
+    encode zstd gzip
+
+    @api path /api/*
+    reverse_proxy @api backend:8000
+
+    reverse_proxy frontend:3000
+
+    header {
+        -Server
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), geolocation=(), payment=()"
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}

@@ -30,3 +30,6 @@ Thumbs.db
 # Docker / local data
 postgres_data/
 backups/
+.env.production
+backups/production/
+!.env.production.example

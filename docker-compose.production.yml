@@ -1,0 +1,100 @@
+name: bc-workspace-production
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.5-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - bc_workspace_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - bc_workspace_internal
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_NAME: ${APP_NAME}
+      APP_ENV: production
+      FRONTEND_ORIGIN: https://${APP_DOMAIN}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_ECHO: "false"
+      MEDIAWIKI_API_URL: ${MEDIAWIKI_API_URL}
+      MEDIAWIKI_BOT_USERNAME: ${MEDIAWIKI_BOT_USERNAME}
+      MEDIAWIKI_BOT_PASSWORD: ${MEDIAWIKI_BOT_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+      OPENAI_TIMEOUT_SECONDS: ${OPENAI_TIMEOUT_SECONDS}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL}
+      OPENAI_EMBEDDING_DIMENSIONS: ${OPENAI_EMBEDDING_DIMENSIONS}
+      OPENAI_EMBEDDING_BATCH_SIZE: ${OPENAI_EMBEDDING_BATCH_SIZE}
+      COPILOT_RETRIEVAL_MODE: ${COPILOT_RETRIEVAL_MODE}
+    command:
+      [
+        "sh",
+        "-c",
+        "python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bc_workspace_internal
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: https://${APP_DOMAIN}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - bc_workspace_internal
+
+  proxy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - bc_workspace_caddy_data:/data
+      - bc_workspace_caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - bc_workspace_internal
+
+networks:
+  bc_workspace_internal:
+    driver: bridge
+
+volumes:
+  bc_workspace_postgres_data:
+  bc_workspace_caddy_data:
+  bc_workspace_caddy_config:
