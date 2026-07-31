@@ -145,6 +145,11 @@ class KnowledgeRevisionMetadata(Base):
         nullable=False,
         default=list,
     )
+    access_roles: Mapped[list[str]] = mapped_column(
+        ARRAY(Text),
+        nullable=False,
+        default=list,
+    )
     owner: Mapped[str | None] = mapped_column(
         Text
     )

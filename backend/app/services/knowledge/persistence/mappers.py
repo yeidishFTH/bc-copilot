@@ -16,7 +16,7 @@ from app.services.knowledge.models import (
     KnowledgeDocument,
     KnowledgeDocumentRevision,
 )
-from app.services.wiki_parser import WikiMetadataParser
+from app.services.wiki_parser.metadata import WikiMetadataParser
 
 
 class KnowledgePersistenceMapper:
@@ -120,6 +120,9 @@ class KnowledgePersistenceMapper:
                 portal=metadata.portal,
                 category=metadata.category,
                 audience=list(metadata.audience),
+                access_roles=list(
+                    metadata.access_roles
+                ),
                 owner=metadata.owner,
                 responsible_department=(
                     metadata.responsible_department

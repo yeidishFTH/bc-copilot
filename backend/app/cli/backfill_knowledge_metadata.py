@@ -14,7 +14,7 @@ from app.db.models import (
     KnowledgeRevisionMetadata,
 )
 from app.db.session import AsyncSessionFactory
-from app.services.wiki_parser import WikiMetadataParser
+from app.services.wiki_parser.metadata import WikiMetadataParser
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -49,6 +49,9 @@ def metadata_values(
         "portal": parsed.portal,
         "category": parsed.category,
         "audience": list(parsed.audience),
+        "access_roles": list(
+            parsed.access_roles
+        ),
         "owner": parsed.owner,
         "responsible_department": (
             parsed.responsible_department
@@ -118,6 +121,9 @@ async def backfill(
                 "portal": parsed.portal,
                 "category": parsed.category,
                 "audience": list(parsed.audience),
+                "access_roles": list(
+                    parsed.access_roles
+                ),
                 "owner": parsed.owner,
                 "responsible_department": (
                     parsed.responsible_department

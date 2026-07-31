@@ -32,6 +32,7 @@ def test_metadata_values_extracts_template() -> None:
             "נציגים",
             "מנהלי סניפים",
         ],
+        "access_roles": [],
         "owner": "מחלקת ציות",
         "responsible_department": "ציות",
         "updated_on": date(2026, 7, 26),
