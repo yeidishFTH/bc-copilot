@@ -14,6 +14,7 @@ class WikiDocumentMetadata:
     portal: str | None = None
     category: str | None = None
     audience: tuple[str, ...] = ()
+    access_roles: tuple[str, ...] = ()
     owner: str | None = None
     responsible_department: str | None = None
     updated_on: date | None = None
@@ -34,6 +35,10 @@ class WikiMetadataParser:
         "פורטל": "portal",
         "קטגוריה": "category",
         "קהל יעד": "audience",
+        "הרשאות גישה": "access_roles",
+        "תפקידי גישה": "access_roles",
+        "Access Roles": "access_roles",
+        "Allowed Roles": "access_roles",
         "בעלים": "owner",
         "מחלקה אחראית": "responsible_department",
         "עדכון אחרון": "updated_on",
@@ -77,6 +82,9 @@ class WikiMetadataParser:
             ),
             audience=self._parse_audience(
                 fields.get("audience")
+            ),
+            access_roles=self._parse_access_roles(
+                fields.get("access_roles")
             ),
             owner=self._optional_value(
                 fields.get("owner")
@@ -227,6 +235,62 @@ class WikiMetadataParser:
                 values.append(item)
 
         return tuple(values)
+
+    @classmethod
+    def _parse_access_roles(
+        cls,
+        value: str | None,
+    ) -> tuple[str, ...]:
+        normalized = cls._optional_value(value)
+
+        if normalized is None:
+            return ()
+
+        aliases = {
+            "branch_user": "branch_user",
+            "branch user": "branch_user",
+            "סניף": "branch_user",
+            "סניפים": "branch_user",
+            "נציג": "branch_user",
+            "נציגים": "branch_user",
+            "עובד סניף": "branch_user",
+            "עובדי סניף": "branch_user",
+            "management": "management",
+            "הנהלה": "management",
+            "מנהל": "management",
+            "מנהלים": "management",
+            "מנהל סניף": "management",
+            "מנהלי סניפים": "management",
+            "מנהל אזור": "management",
+            "מנהלי אזור": "management",
+            "administrator": "administrator",
+            "admin": "administrator",
+            "מנהל מערכת": "administrator",
+            "מנהלי מערכת": "administrator",
+        }
+
+        roles: list[str] = []
+
+        for part in re.split(
+            r"[,،;|\n]+",
+            normalized,
+        ):
+            item = " ".join(part.split())
+
+            if not item:
+                continue
+
+            canonical = aliases.get(
+                item.casefold()
+            )
+
+            if (
+                canonical is not None
+                and canonical not in roles
+            ):
+                roles.append(canonical)
+
+        return tuple(roles)
 
     @classmethod
     def _parse_date(
