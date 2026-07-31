@@ -326,3 +326,19 @@ def test_markdown_report_contains_summary_and_table() -> None:
     assert "## Documents" in report
     assert "נוהל פתיחת סניף" in report
     assert "portal_policy_v1" not in report
+
+
+def test_csv_report_uses_lf_line_endings() -> None:
+    report = render_csv(
+        (make_row(),)
+    )
+
+    assert "\r" not in report
+    assert report.endswith("\n")
+
+    lines = report.splitlines()
+
+    assert len(lines) == 2
+    assert lines[0].startswith(
+        "title,canonical_url,"
+    )

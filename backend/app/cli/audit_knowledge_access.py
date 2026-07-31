@@ -630,7 +630,9 @@ def render_csv(
         KnowledgeAccessAuditRow
     ],
 ) -> str:
-    output = io.StringIO()
+    output = io.StringIO(
+        newline="",
+    )
 
     fieldnames = (
         "title",
@@ -662,6 +664,7 @@ def render_csv(
     writer = csv.DictWriter(
         output,
         fieldnames=fieldnames,
+        lineterminator="\n",
     )
 
     writer.writeheader()

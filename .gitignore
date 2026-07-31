@@ -33,3 +33,4 @@ backups/
 .env.production
 backups/production/
 !.env.production.example
+reports/knowledge-access/
