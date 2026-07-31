@@ -57,6 +57,7 @@ class KnowledgeSearchResult:
     portal: str | None = None
     category: str | None = None
     audience: tuple[str, ...] = ()
+    access_roles: tuple[str, ...] = ()
     owner: str | None = None
     responsible_department: str | None = None
     updated_on: date | None = None

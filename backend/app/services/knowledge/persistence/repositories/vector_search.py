@@ -118,6 +118,7 @@ class KnowledgeVectorSearchRepository:
                 KnowledgeRevisionMetadata.portal,
                 KnowledgeRevisionMetadata.category,
                 KnowledgeRevisionMetadata.audience,
+                KnowledgeRevisionMetadata.access_roles,
                 KnowledgeRevisionMetadata.owner,
                 (
                     KnowledgeRevisionMetadata
@@ -306,6 +307,14 @@ class KnowledgeVectorSearchRepository:
                 getattr(
                     row,
                     "audience",
+                    None,
+                )
+                or ()
+            ),
+            access_roles=tuple(
+                getattr(
+                    row,
+                    "access_roles",
                     None,
                 )
                 or ()

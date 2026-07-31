@@ -201,6 +201,7 @@ class KnowledgeSearchRepository:
                 KnowledgeRevisionMetadata.portal,
                 KnowledgeRevisionMetadata.category,
                 KnowledgeRevisionMetadata.audience,
+                KnowledgeRevisionMetadata.access_roles,
                 KnowledgeRevisionMetadata.owner,
                 KnowledgeRevisionMetadata.responsible_department,
                 KnowledgeRevisionMetadata.updated_on,
@@ -375,6 +376,14 @@ class KnowledgeSearchRepository:
                 getattr(
                     row,
                     "audience",
+                    None,
+                )
+                or ()
+            ),
+            access_roles=tuple(
+                getattr(
+                    row,
+                    "access_roles",
                     None,
                 )
                 or ()
