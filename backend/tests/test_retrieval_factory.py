@@ -163,3 +163,107 @@ def test_lexical_mode_does_not_build_embeddings(
         retriever,
         KnowledgeRetrievalService,
     )
+
+
+def test_lexical_factory_passes_access_role() -> None:
+    retriever = build_knowledge_retriever(
+        session=FakeSession(),  # type: ignore[arg-type]
+        settings=make_settings(
+            mode="lexical"
+        ),
+        access_role="management",
+    )
+
+    assert isinstance(
+        retriever,
+        KnowledgeRetrievalService,
+    )
+    assert (
+        retriever
+        ._search
+        ._access_role
+        == "management"
+    )
+
+
+def test_semantic_factory_passes_access_role() -> None:
+    retriever = build_knowledge_retriever(
+        session=FakeSession(),  # type: ignore[arg-type]
+        settings=make_settings(
+            mode="semantic"
+        ),
+        api_key="test-key",
+        access_role="administrator",
+    )
+
+    assert isinstance(
+        retriever,
+        SemanticRetrievalService,
+    )
+    assert (
+        retriever
+        ._search
+        ._access_role
+        == "administrator"
+    )
+
+
+def test_hybrid_factory_scopes_both_retrievers() -> None:
+    retriever = build_knowledge_retriever(
+        session=FakeSession(),  # type: ignore[arg-type]
+        settings=make_settings(
+            mode="hybrid"
+        ),
+        api_key="test-key",
+        access_role="branch_user",
+    )
+
+    assert isinstance(
+        retriever,
+        HybridRetrievalService,
+    )
+
+    assert (
+        retriever
+        ._lexical
+        ._search
+        ._access_role
+        == "branch_user"
+    )
+
+    assert (
+        retriever
+        ._semantic
+        ._search
+        ._access_role
+        == "branch_user"
+    )
+
+
+def test_factory_without_access_role_is_open_only() -> None:
+    retriever = build_knowledge_retriever(
+        session=FakeSession(),  # type: ignore[arg-type]
+        settings=make_settings(
+            mode="lexical"
+        ),
+    )
+
+    assert isinstance(
+        retriever,
+        KnowledgeRetrievalService,
+    )
+    assert retriever._search._access_role is None
+
+
+def test_factory_rejects_unknown_access_role() -> None:
+    with pytest.raises(
+        ValueError,
+        match="access_role is not recognized",
+    ):
+        build_knowledge_retriever(
+            session=FakeSession(),  # type: ignore[arg-type]
+            settings=make_settings(
+                mode="lexical"
+            ),
+            access_role="unknown",
+        )

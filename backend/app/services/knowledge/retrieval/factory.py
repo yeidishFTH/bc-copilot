@@ -44,6 +44,7 @@ def build_knowledge_retriever(
     session: AsyncSession,
     settings: Settings,
     api_key: str | None = None,
+    access_role: str | None = None,
 ) -> KnowledgeRetriever:
     """
     Build the configured retrieval implementation.
@@ -55,7 +56,10 @@ def build_knowledge_retriever(
     mode = settings.copilot_retrieval_mode
 
     lexical = KnowledgeRetrievalService(
-        KnowledgeSearchRepository(session)
+        KnowledgeSearchRepository(
+            session,
+            access_role=access_role,
+        )
     )
 
     if mode == "lexical":
@@ -74,7 +78,8 @@ def build_knowledge_retriever(
             timeout_seconds=settings.openai_timeout_seconds,
         ),
         search=KnowledgeVectorSearchRepository(
-            session
+            session,
+            access_role=access_role,
         ),
     )
 
