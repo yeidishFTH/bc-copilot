@@ -1,19 +1,20 @@
 from __future__ import annotations
 
+from app.api.workspace_dependencies import (
+    get_authorized_copilot_answer_service,
+)
+
 import pytest
 
 import json
 from fastapi.testclient import TestClient
 
-from app.api.dependencies import (
-    get_copilot_answer_service,
-)
 from app.main import app
 from app.services.copilot import (
-    CopilotAnswer,
+
+CopilotAnswer,
     CopilotSource,
 )
-
 
 pytestmark = pytest.mark.usefixtures("workspace_access_override")
 
@@ -53,10 +54,9 @@ class FakeCopilotService:
             context_truncated=False,
         )
 
-
 def test_copilot_ask_returns_grounded_answer() -> None:
     app.dependency_overrides[
-        get_copilot_answer_service
+        get_authorized_copilot_answer_service
     ] = lambda: FakeCopilotService()
 
     try:
@@ -83,10 +83,9 @@ def test_copilot_ask_returns_grounded_answer() -> None:
         "נוהל מחיקת כרטיס לקוח"
     )
 
-
 def test_copilot_ask_validates_question() -> None:
     app.dependency_overrides[
-        get_copilot_answer_service
+        get_authorized_copilot_answer_service
     ] = lambda: FakeCopilotService()
 
     try:
@@ -102,7 +101,6 @@ def test_copilot_ask_validates_question() -> None:
 
     assert response.status_code == 422
 
-
 def test_copilot_route_exists_in_openapi() -> None:
     schema = app.openapi()
 
@@ -112,10 +110,9 @@ def test_copilot_route_exists_in_openapi() -> None:
         in schema["paths"]["/api/copilot/ask"]
     )
 
-
 def test_copilot_ask_accepts_conversation_history() -> None:
     app.dependency_overrides[
-        get_copilot_answer_service
+        get_authorized_copilot_answer_service
     ] = lambda: FakeCopilotService()
 
     try:
@@ -148,10 +145,9 @@ def test_copilot_ask_accepts_conversation_history() -> None:
 
     assert response.status_code == 200
 
-
 def test_copilot_ask_rejects_invalid_history_role() -> None:
     app.dependency_overrides[
-        get_copilot_answer_service
+        get_authorized_copilot_answer_service
     ] = lambda: FakeCopilotService()
 
     try:
@@ -172,7 +168,6 @@ def test_copilot_ask_rejects_invalid_history_role() -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 422
-
 
 def test_copilot_stream_returns_ndjson_events() -> None:
     class FakeStreamingCopilotService:
@@ -201,7 +196,7 @@ def test_copilot_stream_returns_ndjson_events() -> None:
             }
 
     app.dependency_overrides[
-        get_copilot_answer_service
+        get_authorized_copilot_answer_service
     ] = lambda: FakeStreamingCopilotService()
 
     try:

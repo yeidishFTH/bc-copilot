@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+from app.api.workspace_dependencies import (
+    get_authorized_knowledge_retrieval_service,
+)
+
 import pytest
 
 from collections.abc import Sequence
 
 from fastapi.testclient import TestClient
 
-from app.api.dependencies import get_knowledge_retrieval_service
 from app.main import app
 from app.services.knowledge.models import KnowledgeSearchResult
-
 
 pytestmark = pytest.mark.usefixtures("workspace_access_override")
 
@@ -44,7 +46,6 @@ class FakeKnowledgeRetrievalService:
 
         return self.results
 
-
 def make_result() -> KnowledgeSearchResult:
     return KnowledgeSearchResult(
         page_id="page-1",
@@ -62,12 +63,11 @@ def make_result() -> KnowledgeSearchResult:
         rank=0.875,
     )
 
-
 def test_search_endpoint_returns_ranked_results() -> None:
     service = FakeKnowledgeRetrievalService([make_result()])
 
     app.dependency_overrides[
-        get_knowledge_retrieval_service
+        get_authorized_knowledge_retrieval_service
     ] = lambda: service
 
     try:
@@ -120,12 +120,11 @@ def test_search_endpoint_returns_ranked_results() -> None:
         }
     ]
 
-
 def test_search_endpoint_validates_request() -> None:
     service = FakeKnowledgeRetrievalService()
 
     app.dependency_overrides[
-        get_knowledge_retrieval_service
+        get_authorized_knowledge_retrieval_service
     ] = lambda: service
 
     try:
@@ -143,14 +142,13 @@ def test_search_endpoint_validates_request() -> None:
     assert response.status_code == 422
     assert service.calls == []
 
-
 def test_search_endpoint_returns_503_on_service_failure() -> None:
     service = FakeKnowledgeRetrievalService(
         error=RuntimeError("database unavailable")
     )
 
     app.dependency_overrides[
-        get_knowledge_retrieval_service
+        get_authorized_knowledge_retrieval_service
     ] = lambda: service
 
     try:

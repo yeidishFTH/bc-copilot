@@ -3,7 +3,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.auth_dependencies import require_workspace_access
-from app.api.dependencies import get_knowledge_retrieval_service
+from app.api.workspace_dependencies import (
+    get_authorized_knowledge_retrieval_service,
+)
 from app.models.knowledge import (
     KnowledgeSearchItem,
     KnowledgeSearchRequest,
@@ -29,7 +31,7 @@ router = APIRouter(
 async def search_knowledge(
     request: KnowledgeSearchRequest,
     service: KnowledgeRetrievalService = Depends(
-        get_knowledge_retrieval_service
+        get_authorized_knowledge_retrieval_service
     ),
 ) -> KnowledgeSearchResponse:
     try:

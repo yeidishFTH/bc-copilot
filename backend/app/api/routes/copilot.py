@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.api.auth_dependencies import require_workspace_access
-from app.api.dependencies import (
-    get_copilot_answer_service,
+from app.api.workspace_dependencies import (
+    get_authorized_copilot_answer_service,
 )
 from app.models.copilot import (
     CopilotAskRequest,
@@ -39,7 +39,7 @@ router = APIRouter(
 async def ask_copilot(
     request: CopilotAskRequest,
     service: CopilotAnswerService = Depends(
-        get_copilot_answer_service
+        get_authorized_copilot_answer_service
     ),
 ) -> CopilotAskResponse:
     try:
@@ -147,7 +147,7 @@ async def ask_copilot(
 async def stream_copilot_answer(
     request: CopilotAskRequest,
     service: CopilotAnswerService = Depends(
-        get_copilot_answer_service
+        get_authorized_copilot_answer_service
     ),
 ) -> StreamingResponse:
     async def event_stream() -> AsyncIterator[bytes]:
