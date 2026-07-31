@@ -80,8 +80,16 @@ class KnowledgeSearchRepository:
         }
     )
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        *,
+        access_role: str | None = None,
+    ) -> None:
         self._session = session
+        self._access_role = self._normalize_access_role(
+            access_role
+        )
 
     async def search_chunks(
         self,
@@ -94,6 +102,7 @@ class KnowledgeSearchRepository:
             query,
             limit=limit,
             namespace_ids=namespace_ids,
+            access_role=self._access_role,
         )
 
         result = await self._session.execute(statement)
@@ -110,6 +119,7 @@ class KnowledgeSearchRepository:
         *,
         limit: int = DEFAULT_LIMIT,
         namespace_ids: Sequence[int] | None = None,
+        access_role: str | None = None,
     ) -> Select:
         """Build the PostgreSQL full-text search statement."""
 
@@ -117,6 +127,9 @@ class KnowledgeSearchRepository:
         normalized_limit = cls._normalize_limit(limit)
         normalized_namespaces = cls._normalize_namespace_ids(
             namespace_ids
+        )
+        normalized_access_role = cls._normalize_access_role(
+            access_role
         )
 
         search_terms = cls._search_terms(normalized_query)
@@ -247,7 +260,63 @@ class KnowledgeSearchRepository:
                 )
             )
 
+        statement = statement.where(
+            cls._access_condition(
+                normalized_access_role
+            )
+        )
+
         return statement
+
+    @staticmethod
+    def _normalize_access_role(
+        access_role: str | None,
+    ) -> str | None:
+        if access_role is None:
+            return None
+
+        if not isinstance(access_role, str):
+            raise ValueError(
+                "access_role must be a string or None"
+            )
+
+        normalized = access_role.strip().casefold()
+
+        allowed_roles = {
+            "branch_user",
+            "management",
+            "administrator",
+        }
+
+        if normalized not in allowed_roles:
+            raise ValueError(
+                "access_role is not recognized"
+            )
+
+        return normalized
+
+    @staticmethod
+    def _access_condition(
+        access_role: str | None,
+    ):
+        open_access = (
+            func.coalesce(
+                func.cardinality(
+                    KnowledgeRevisionMetadata.access_roles
+                ),
+                0,
+            )
+            == 0
+        )
+
+        if access_role is None:
+            return open_access
+
+        return open_access | (
+            KnowledgeRevisionMetadata
+            .access_roles
+            .any(access_role)
+        )
 
     @classmethod
     def _build_broad_search_expression(
