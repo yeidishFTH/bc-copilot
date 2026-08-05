@@ -173,3 +173,31 @@ def get_action_executor(
             session
         ),
     )
+
+
+def get_user_service(
+    session: AsyncSession = Depends(
+        get_db_session
+    ),
+):
+    from app.services.users.service import (
+        UserService,
+    )
+
+    return UserService(
+        session=session,
+    )
+
+
+def get_permission_service(
+    session: AsyncSession = Depends(
+        get_db_session
+    ),
+):
+    from app.services.auth.permissions import (
+        PermissionService,
+    )
+
+    return PermissionService(
+        session=session,
+    )
