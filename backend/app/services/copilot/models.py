@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 
 from app.services.copilot.claim_citations import (
     CitationClaim,
@@ -54,3 +55,6 @@ class CopilotAnswer:
     context_estimated_tokens: int
     context_truncated: bool
     citation_claims: tuple[CitationClaim, ...] = ()
+    answer_type: str = "knowledge_answer"
+    action: dict[str, Any] | None = None
+    approval: dict[str, Any] | None = None

@@ -6,6 +6,8 @@ from collections.abc import AsyncIterator
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
+from app.db.models import UserAccount
+
 from app.api.auth_dependencies import require_workspace_access
 from app.api.workspace_dependencies import (
     get_authorized_copilot_answer_service,
@@ -38,6 +40,9 @@ router = APIRouter(
 )
 async def ask_copilot(
     request: CopilotAskRequest,
+    account: UserAccount = Depends(
+        require_workspace_access
+    ),
     service: CopilotAnswerService = Depends(
         get_authorized_copilot_answer_service
     ),
@@ -45,6 +50,7 @@ async def ask_copilot(
     try:
         result = await service.answer(
             request.question,
+            account=account,
             history=tuple(
                 CopilotConversationMessage(
                     role=message.role,
@@ -121,6 +127,9 @@ async def ask_copilot(
         context_truncated=(
             result.context_truncated
         ),
+        answer_type=result.answer_type,
+        action=result.action,
+        approval=result.approval,
         citation_claims=[
             CopilotCitationClaimResponse(
                 index=claim.index,

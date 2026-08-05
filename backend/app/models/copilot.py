@@ -106,6 +106,9 @@ class CopilotAskResponse(BaseModel):
     context_character_count: int
     context_estimated_tokens: int
     context_truncated: bool
+    answer_type: str = "knowledge_answer"
+    action: dict | None = None
+    approval: dict | None = None
     citation_claims: list[
         CopilotCitationClaimResponse
     ] = Field(default_factory=list)

@@ -18,7 +18,7 @@ from sqlalchemy import (
     func,
 )
 from pgvector.sqlalchemy import Vector
-from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
+from sqlalchemy.dialects.postgresql import TSVECTOR, UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -559,4 +559,74 @@ class AuthSession(Base):
 
     account: Mapped[UserAccount] = relationship(
         back_populates="sessions",
+    )
+
+
+class ApprovalRequest(Base):
+    __tablename__ = "approval_requests"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    action: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    requested_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "user_accounts.id",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+    )
+
+    payload: Mapped[dict] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=dict,
+    )
+
+    status: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="PENDING",
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "user_accounts.id",
+            ondelete="RESTRICT",
+        ),
+    )
+
+    approved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+
+    execution_status: Mapped[str | None] = mapped_column(
+        Text,
+    )
+
+    executed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+
+    execution_result: Mapped[dict | None] = mapped_column(
+        JSONB,
+    )
+
+    execution_error: Mapped[str | None] = mapped_column(
+        Text,
     )

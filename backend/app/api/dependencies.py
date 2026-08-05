@@ -128,3 +128,42 @@ def get_authentication_service(
         ),
         lock_minutes=settings.auth_lock_minutes,
     )
+
+
+
+
+def get_approval_service(
+    session: AsyncSession = Depends(
+        get_db_session
+    ),
+):
+    from app.services.actions.approval_service import (
+        ApprovalService,
+    )
+
+    return ApprovalService(
+        session=session,
+    )
+
+
+def get_action_executor(
+    session: AsyncSession = Depends(
+        get_db_session
+    ),
+):
+    from app.services.actions.executor import (
+        ActionExecutor,
+    )
+    from app.services.actions.default_registry import (
+        build_action_registry,
+    )
+    from app.services.actions.approval_repository import (
+        ApprovalRequestRepository,
+    )
+
+    return ActionExecutor(
+        registry=build_action_registry(),
+        repository=ApprovalRequestRepository(
+            session
+        ),
+    )

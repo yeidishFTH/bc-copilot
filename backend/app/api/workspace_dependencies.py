@@ -15,6 +15,10 @@ from app.services.copilot import (
     MultiQueryRetrievalService,
     OpenAITextGenerationClient,
 )
+
+from app.services.actions import (
+    ApprovalService,
+)
 from app.services.knowledge.retrieval import (
     KnowledgeRetriever,
     RetrievalConfigurationError,
@@ -163,7 +167,12 @@ def get_authorized_copilot_answer_service(
         ),
     )
 
+    approval_service = ApprovalService(
+        session=session,
+    )
+
     return CopilotAnswerService(
         context_service=context_service,
         generator=generator,
+        approval_service=approval_service,
     )

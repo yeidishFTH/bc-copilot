@@ -33,6 +33,10 @@ from app.services.copilot.protocol import (
 from app.services.knowledge.retrieval import (
     KnowledgeContextService,
 )
+from app.services.actions import (
+    CopilotActionDetector,
+    ApprovalService,
+)
 
 
 class CopilotAnswerService:
@@ -58,6 +62,8 @@ class CopilotAnswerService:
         citation_validator: CitationValidator | None = None,
         claim_citation_mapper: ClaimCitationMapper | None = None,
         conversation_resolver: ConversationMemoryResolver | None = None,
+        action_detector: CopilotActionDetector | None = None,
+        approval_service: ApprovalService | None = None,
     ) -> None:
         self._context_service = context_service
         self._generator = generator
@@ -78,11 +84,17 @@ class CopilotAnswerService:
             conversation_resolver
             or ConversationMemoryResolver()
         )
+        self._action_detector = (
+            action_detector
+            or CopilotActionDetector()
+        )
+        self._approval_service = approval_service
 
     async def answer(
         self,
         question: str,
         *,
+        account=None,
         history: Sequence[CopilotConversationMessage] = (),
         namespace_ids: Sequence[int] | None = None,
         search_limit: int | None = None,
@@ -101,6 +113,65 @@ class CopilotAnswerService:
         retrieval_query = (
             conversation_resolution.resolved_question
         )
+
+        print("DEBUG normalized_question:", normalized_question)
+        print("DEBUG retrieval_query:", retrieval_query)
+
+        action_decision = (
+            self._action_detector.detect(
+                retrieval_query
+            )
+        )
+
+        print(
+            "DEBUG action_request:",
+            action_decision.action_request
+        )
+
+        if action_decision.is_action:
+
+            if account is None:
+                raise ValueError(
+                    "Account is required for action execution"
+                )
+
+            if self._approval_service is None:
+                raise RuntimeError(
+                    "Approval service is not configured"
+                )
+
+            approval = await self._approval_service.create(
+                requester_id=account.id,
+                action_request=(
+                    action_decision.action_request
+                ),
+            )
+
+            await self._approval_service.commit()
+
+            return CopilotAnswer(
+                question=normalized_question,
+                answer=(
+                    "זוהתה בקשת פעולה: "
+                    f"{action_decision.action_request.action}. "
+                    "נוצרה בקשת אישור לביצוע."
+                ),
+                sources=(),
+                grounded=False,
+                context_character_count=0,
+                context_estimated_tokens=0,
+                context_truncated=False,
+                answer_type="approval_required",
+                action={
+                    "name": action_decision.action_request.action,
+                    "requires_approval": True,
+                },
+                approval={
+                    "id": str(approval.id),
+                    "status": approval.status,
+                    "requested_by": str(approval.requested_by),
+                },
+            )
 
         classification = self._intent_classifier.classify(
             retrieval_query
