@@ -1,10 +1,16 @@
 import pytest
 from uuid import uuid4
 
-from app.db.models import ApprovalRequest
+from app.db.models import (
+    ApprovalRequest,
+    AccountRole,
+    UserAccount,
+)
+
 from app.services.actions.executor import (
     ActionExecutor,
 )
+
 from app.services.actions.default_registry import (
     build_action_registry,
 )
@@ -19,6 +25,17 @@ class FakeRepository:
         pass
 
 
+class FakePermissionService:
+
+    async def has_permission(
+        self,
+        *,
+        account,
+        permission_key,
+    ):
+        return True
+
+
 @pytest.mark.asyncio
 async def test_publish_knowledge_execution():
 
@@ -27,6 +44,16 @@ async def test_publish_knowledge_execution():
     executor = ActionExecutor(
         registry=registry,
         repository=FakeRepository(),
+        permission_service=FakePermissionService(),
+    )
+
+    account = UserAccount(
+        id=uuid4(),
+        email="admin@test.com",
+        display_name="Admin",
+        account_type="individual",
+        role=AccountRole.administrator,
+        password_hash="test",
     )
 
     approval = ApprovalRequest(
@@ -39,7 +66,8 @@ async def test_publish_knowledge_execution():
     )
 
     result = await executor.execute(
-        approval
+        approval,
+        account,
     )
 
     assert result["executed"] is True

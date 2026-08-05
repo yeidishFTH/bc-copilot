@@ -329,6 +329,88 @@ class AccountRole(str, enum.Enum):
     administrator = "administrator"
 
 
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    key: Mapped[str] = mapped_column(
+        String(120),
+        nullable=False,
+        unique=True,
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(160),
+        nullable=False,
+    )
+
+    description: Mapped[str | None] = mapped_column(
+        Text,
+    )
+
+
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    role: Mapped[AccountRole] = mapped_column(
+        Enum(
+            AccountRole,
+            name="account_role",
+            native_enum=False,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
+
+    permission_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "permissions.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+    )
+
+
+class UserPermission(Base):
+    __tablename__ = "user_permissions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "user_accounts.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+    )
+
+    permission_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "permissions.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+    )
+
+
 class Branch(Base):
     __tablename__ = "branches"
     __table_args__ = (

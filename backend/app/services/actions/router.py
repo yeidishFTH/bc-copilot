@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from app.db.models import UserAccount
 
+from app.services.auth.permissions import (
+    PermissionService,
+)
+
 from .context import ActionExecutionContext
 from .models import ActionRequest
 from .permissions import can_execute_action
@@ -10,8 +14,12 @@ from .registry import ActionRegistry
 
 class ActionRouter:
 
-    def __init__(self):
+    def __init__(
+        self,
+        permission_service: PermissionService,
+    ):
         self.registry = ActionRegistry()
+        self.permission_service = permission_service
 
 
     def resolve(
@@ -24,7 +32,7 @@ class ActionRouter:
         )
 
 
-    def create_execution_context(
+    async def create_execution_context(
         self,
         account: UserAccount,
         request: ActionRequest,
@@ -39,9 +47,10 @@ class ActionRouter:
                 "Unknown action"
             )
 
-        authorized = can_execute_action(
+        authorized = await can_execute_action(
             account,
             action,
+            self.permission_service,
         )
 
         return ActionExecutionContext(

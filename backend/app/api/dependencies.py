@@ -160,10 +160,16 @@ def get_action_executor(
     from app.services.actions.approval_repository import (
         ApprovalRequestRepository,
     )
+    from app.services.auth.permissions import (
+        PermissionService,
+    )
 
     return ActionExecutor(
         registry=build_action_registry(),
         repository=ApprovalRequestRepository(
+            session
+        ),
+        permission_service=PermissionService(
             session
         ),
     )

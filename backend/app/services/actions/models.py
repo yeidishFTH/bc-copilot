@@ -12,7 +12,13 @@ class ActionRequest(BaseModel):
 class ActionDefinition(BaseModel):
     name: str
     description: str
+
     allowed_roles: list[str] = Field(
         default_factory=list
     )
+
+    required_permissions: list[str] = Field(
+        default_factory=list
+    )
+
     requires_approval: bool = False
