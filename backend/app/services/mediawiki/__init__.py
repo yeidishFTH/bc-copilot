@@ -18,6 +18,7 @@ from app.services.mediawiki.repositories import (
     MediaWikiPageRepository,
     MediaWikiRevisionRepository,
 )
+from app.services.mediawiki.writer import MediaWikiWriter
 from app.services.mediawiki.source import (
     MediaWikiCategoryReader,
     MediaWikiKnowledgeSource,
@@ -42,4 +43,5 @@ __all__ = [
     "MediaWikiRevisionRepository",
     "MediaWikiRevisionReader",
     "MediaWikiSession",
+"MediaWikiWriter",
 ]

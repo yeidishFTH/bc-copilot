@@ -146,6 +146,57 @@ def get_approval_service(
     )
 
 
+def get_mediawiki_writer():
+    from urllib.parse import urlsplit
+
+    from app.services.mediawiki import (
+        MediaWikiAuthenticator,
+        MediaWikiCredentials,
+        MediaWikiWriter,
+    )
+    from app.services.transport import HttpTransport
+
+    settings = get_settings()
+
+    if (
+        settings.mediawiki_bot_username is None
+        or settings.mediawiki_bot_password is None
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="MediaWiki integration is not configured",
+        )
+
+    parsed = urlsplit(
+        settings.mediawiki_api_url
+    )
+
+    transport = HttpTransport(
+        base_url=f"{parsed.scheme}://{parsed.netloc}",
+        timeout_seconds=20.0,
+    )
+
+    authenticator = MediaWikiAuthenticator(
+        transport=transport,
+        credentials=MediaWikiCredentials(
+            username=(
+                settings.mediawiki_bot_username.strip()
+            ),
+            password=(
+                settings.mediawiki_bot_password
+                .get_secret_value()
+            ),
+        ),
+        api_path=parsed.path,
+    )
+
+    return MediaWikiWriter(
+        transport=transport,
+        authenticator=authenticator,
+        api_path=parsed.path,
+    )
+
+
 def get_action_executor(
     session: AsyncSession = Depends(
         get_db_session
@@ -165,13 +216,28 @@ def get_action_executor(
     )
 
     return ActionExecutor(
-        registry=build_action_registry(),
+        registry=build_action_registry(
+            publish_handler=(
+                __build_publish_handler()
+            ),
+        ),
         repository=ApprovalRequestRepository(
             session
         ),
         permission_service=PermissionService(
             session
         ),
+    )
+
+
+
+def __build_publish_handler():
+    from app.services.actions.handlers.publish_knowledge import (
+        build_publish_knowledge_handler,
+    )
+
+    return build_publish_knowledge_handler(
+        get_mediawiki_writer
     )
 
 

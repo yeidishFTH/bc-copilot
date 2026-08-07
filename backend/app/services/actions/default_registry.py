@@ -1,20 +1,37 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from .registry import ActionRegistry
 from .models import ActionDefinition
 
 from .handlers.publish_knowledge import (
-    publish_knowledge,
+    build_publish_knowledge_handler,
 )
 
 
-def build_action_registry() -> ActionRegistry:
+async def _mock_publish_knowledge(
+    payload: dict,
+) -> dict:
+    return {
+        "executed": True,
+        "action": "publish_knowledge",
+        "document": payload.get(
+            "document"
+        ),
+    }
+
+
+def build_action_registry(
+    *,
+    publish_handler: Callable | None = None,
+) -> ActionRegistry:
 
     registry = ActionRegistry()
 
     registry.register(
         "publish_knowledge",
-        publish_knowledge,
+        publish_handler or _mock_publish_knowledge,
         definition=ActionDefinition(
             name="publish_knowledge",
             description="פרסום מסמך ידע לוויקי",
