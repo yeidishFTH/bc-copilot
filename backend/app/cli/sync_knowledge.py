@@ -4,7 +4,6 @@ import argparse
 import asyncio
 import json
 from collections.abc import Sequence
-from urllib.parse import urlsplit
 
 from app.core.config import Settings, get_settings
 from app.db.models import SyncStatus
@@ -22,45 +21,16 @@ from app.services.mediawiki import (
     MediaWikiPageRepository,
     MediaWikiRevisionRepository,
 )
+
+from app.services.mediawiki.utils import (
+    split_mediawiki_api_url,
+)
 from app.services.sync import (
     SyncContext,
     SyncEngine,
     SyncExecutionResult,
 )
 from app.services.transport import HttpTransport
-
-
-def split_mediawiki_api_url(
-    api_url: str,
-) -> tuple[str, str]:
-    """Split an absolute MediaWiki API URL into HTTP base URL and path."""
-
-    normalized = api_url.strip()
-
-    if not normalized:
-        raise ValueError("MEDIAWIKI_API_URL cannot be empty")
-
-    parsed = urlsplit(normalized)
-
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise ValueError(
-            "MEDIAWIKI_API_URL must be an absolute HTTP or HTTPS URL"
-        )
-
-    if not parsed.path or parsed.path == "/":
-        raise ValueError(
-            "MEDIAWIKI_API_URL must include the MediaWiki API path"
-        )
-
-    if parsed.query or parsed.fragment:
-        raise ValueError(
-            "MEDIAWIKI_API_URL cannot contain a query or fragment"
-        )
-
-    base_url = f"{parsed.scheme}://{parsed.netloc}"
-    api_path = parsed.path
-
-    return base_url, api_path
 
 
 class EmptyCategoryReader:
