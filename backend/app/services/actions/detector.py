@@ -12,20 +12,32 @@ class ActionDetector:
 
         normalized = text.lower()
 
-        publish_words = [
+        action_words = [
             "פרסם",
             "תעלה",
             "העלה",
-            "לוויקי",
-            "לוויקיה",
-            "wiki",
             "publish",
-            "את",
         ]
 
-        if not any(
+        wiki_words = [
+            "וויקי",
+            "ויקי",
+            "wiki",
+        ]
+
+        has_action = any(
             word in normalized
-            for word in publish_words
+            for word in action_words
+        )
+
+        has_target = any(
+            word in normalized
+            for word in wiki_words
+        )
+
+        if not (
+            has_action
+            and has_target
         ):
             return None
 
@@ -48,12 +60,11 @@ class ActionDetector:
         document = text
 
         remove_words = [
+            "פרסם",
             "תעלה",
             "העלה",
-            "פרסם",
             "לוויקי",
-            "לוויקיה",
-            "ל wiki",
+            "ויקי",
             "wiki",
             "publish",
             "את",
