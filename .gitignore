@@ -34,3 +34,7 @@ backups/
 backups/production/
 !.env.production.example
 reports/knowledge-access/
+
+backend/branch_cookies.txt
+
+backend/branch_cookies.txt
