@@ -39,9 +39,7 @@ class FakeSession:
         pass
 
 
-@pytest.mark.asyncio
-async def test_approval_lifecycle():
-
+async def create_pending_approval():
     session = FakeSession()
 
     service = ApprovalService(
@@ -60,6 +58,14 @@ async def test_approval_lifecycle():
 
     await service.commit()
 
+    return service, approval
+
+
+@pytest.mark.asyncio
+async def test_approval_lifecycle():
+
+    service, approval = await create_pending_approval()
+
     assert approval.status == "PENDING"
 
     approved = await service.approve(
@@ -70,3 +76,38 @@ async def test_approval_lifecycle():
     assert approved.status == "APPROVED"
     assert approved.approved_by is not None
     assert approved.approved_at is not None
+
+
+@pytest.mark.asyncio
+async def test_cancel_pending_approval():
+
+    service, approval = await create_pending_approval()
+
+    cancelled = await service.cancel(
+        approval_id=approval.id,
+        cancelled_by=uuid4(),
+    )
+
+    assert cancelled.status == "CANCELLED"
+    assert cancelled.approved_by is not None
+    assert cancelled.approved_at is not None
+
+
+@pytest.mark.asyncio
+async def test_cannot_cancel_approved_approval():
+
+    service, approval = await create_pending_approval()
+
+    await service.approve(
+        approval_id=approval.id,
+        approved_by=uuid4(),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Only pending requests can be cancelled",
+    ):
+        await service.cancel(
+            approval_id=approval.id,
+            cancelled_by=uuid4(),
+        )

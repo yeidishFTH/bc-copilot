@@ -2,40 +2,28 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from app.services.mediawiki.writer import MediaWikiWriter
+from app.services.actions.publish_knowledge_service import (
+    PublishKnowledgeService,
+)
 
 
 def build_publish_knowledge_handler(
-    writer_factory: Callable[[], MediaWikiWriter],
+    service_factory: Callable[
+        [],
+        PublishKnowledgeService,
+    ],
 ):
     async def publish_knowledge(
         payload: dict,
     ) -> dict:
 
-        writer = writer_factory()
+        service = service_factory()
 
-        result = await writer.edit_page(
-            title=payload.get(
-                "title",
-                payload.get("document", ""),
-            ),
-            content=payload.get(
-                "content",
+        return await service.publish(
+            document=payload.get(
+                "document",
                 "",
             ),
-            summary=payload.get(
-                "summary",
-                "Published by Bitcoin Change Copilot",
-            ),
         )
-
-        return {
-            "executed": True,
-            "action": "publish_knowledge",
-            "document": payload.get(
-                "document"
-            ),
-            "mediawiki": result,
-        }
 
     return publish_knowledge

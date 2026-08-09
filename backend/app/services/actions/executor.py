@@ -49,6 +49,16 @@ class ActionExecutor:
                 "Only approved requests can execute"
             )
 
+        if approval.execution_status == "EXECUTED":
+            raise ActionExecutionError(
+                "Approval already executed"
+            )
+
+        if approval.execution_status == "EXECUTING":
+            raise ActionExecutionError(
+                "Approval request is already executing"
+            )
+
         definition = self._registry.get_definition(
             approval.action
         )

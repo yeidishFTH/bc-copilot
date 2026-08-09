@@ -9,6 +9,7 @@ from app.db.models import (
 
 from app.services.actions.executor import (
     ActionExecutor,
+    ActionExecutionError,
 )
 
 from app.services.actions.default_registry import (
@@ -36,18 +37,18 @@ class FakePermissionService:
         return True
 
 
-@pytest.mark.asyncio
-async def test_publish_knowledge_execution():
+def build_executor():
 
-    registry = build_action_registry()
-
-    executor = ActionExecutor(
-        registry=registry,
+    return ActionExecutor(
+        registry=build_action_registry(),
         repository=FakeRepository(),
         permission_service=FakePermissionService(),
     )
 
-    account = UserAccount(
+
+def build_admin_account():
+
+    return UserAccount(
         id=uuid4(),
         email="admin@test.com",
         display_name="Admin",
@@ -56,14 +57,28 @@ async def test_publish_knowledge_execution():
         password_hash="test",
     )
 
-    approval = ApprovalRequest(
+
+def build_approval(
+    status="APPROVED",
+):
+    return ApprovalRequest(
         action="publish_knowledge",
-        status="APPROVED",
+        status=status,
         requested_by=uuid4(),
         payload={
             "document": "נוהל KYC",
         },
     )
+
+
+@pytest.mark.asyncio
+async def test_publish_knowledge_execution():
+
+    executor = build_executor()
+
+    account = build_admin_account()
+
+    approval = build_approval()
 
     result = await executor.execute(
         approval,
@@ -76,3 +91,66 @@ async def test_publish_knowledge_execution():
     assert approval.execution_status == "EXECUTED"
     assert approval.executed_at is not None
     assert approval.execution_result == result
+
+
+@pytest.mark.asyncio
+async def test_pending_approval_cannot_execute():
+
+    executor = build_executor()
+
+    approval = build_approval(
+        status="PENDING"
+    )
+
+    account = build_admin_account()
+
+    with pytest.raises(
+        ActionExecutionError,
+        match="Only approved requests can execute",
+    ):
+        await executor.execute(
+            approval,
+            account,
+        )
+
+
+@pytest.mark.asyncio
+async def test_executed_approval_cannot_execute_twice():
+
+    executor = build_executor()
+
+    approval = build_approval()
+
+    approval.execution_status = "EXECUTED"
+
+    account = build_admin_account()
+
+    with pytest.raises(
+        ActionExecutionError,
+        match="Approval already executed",
+    ):
+        await executor.execute(
+            approval,
+            account,
+        )
+
+
+@pytest.mark.asyncio
+async def test_cancelled_approval_cannot_execute():
+
+    executor = build_executor()
+
+    approval = build_approval(
+        status="CANCELLED"
+    )
+
+    account = build_admin_account()
+
+    with pytest.raises(
+        ActionExecutionError,
+        match="Only approved requests can execute",
+    ):
+        await executor.execute(
+            approval,
+            account,
+        )

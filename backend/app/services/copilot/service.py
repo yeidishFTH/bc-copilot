@@ -114,18 +114,11 @@ class CopilotAnswerService:
             conversation_resolution.resolved_question
         )
 
-        print("DEBUG normalized_question:", normalized_question)
-        print("DEBUG retrieval_query:", retrieval_query)
 
         action_decision = (
             self._action_detector.detect(
                 retrieval_query
             )
-        )
-
-        print(
-            "DEBUG action_request:",
-            action_decision.action_request
         )
 
         if action_decision.is_action:

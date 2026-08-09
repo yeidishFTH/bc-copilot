@@ -146,6 +146,66 @@ def get_approval_service(
     )
 
 
+
+def get_approval_history_service(
+    session: AsyncSession = Depends(
+        get_db_session
+    ),
+):
+    from app.services.actions.approval_repository import (
+        ApprovalRequestRepository,
+    )
+    from app.services.actions.history_service import (
+        ApprovalHistoryService,
+    )
+
+    return ApprovalHistoryService(
+        ApprovalRequestRepository(
+            session
+        )
+    )
+
+
+def get_approval_control_service(
+    session: AsyncSession = Depends(
+        get_db_session
+    ),
+):
+    from app.services.actions.approval_repository import (
+        ApprovalRequestRepository,
+    )
+    from app.services.actions.control_service import (
+        ApprovalControlService,
+    )
+
+    return ApprovalControlService(
+        ApprovalRequestRepository(
+            session
+        )
+    )
+
+
+
+def get_approval_dashboard_service(
+    session: AsyncSession = Depends(
+        get_db_session
+    ),
+):
+    from app.services.actions.approval_repository import (
+        ApprovalRequestRepository,
+    )
+    from app.services.actions.dashboard_service import (
+        ApprovalDashboardService,
+    )
+
+    return ApprovalDashboardService(
+        ApprovalRequestRepository(
+            session
+        )
+    )
+
+
+
 def get_mediawiki_writer():
     from urllib.parse import urlsplit
 
@@ -197,6 +257,52 @@ def get_mediawiki_writer():
     )
 
 
+
+
+
+def get_publish_knowledge_service(
+    session: AsyncSession = Depends(
+        get_db_session
+    ),
+):
+    from app.services.actions.publish_knowledge_service import (
+        PublishKnowledgeService,
+    )
+
+    settings = get_settings()
+
+    api_key = (
+        settings.openai_api_key
+        .get_secret_value()
+        .strip()
+        if settings.openai_api_key is not None
+        else None
+    )
+
+    retrieval_service = build_knowledge_retriever(
+        session=session,
+        settings=settings,
+        api_key=api_key,
+    )
+
+    multi_query_retrieval = (
+        MultiQueryRetrievalService(
+            retrieval_service
+        )
+    )
+
+    context_service = (
+        MultiQueryKnowledgeContextService(
+            multi_query_retrieval
+        )
+    )
+
+    return PublishKnowledgeService(
+        context_service=context_service,
+        writer=get_mediawiki_writer(),
+    )
+
+
 def get_action_executor(
     session: AsyncSession = Depends(
         get_db_session
@@ -215,10 +321,49 @@ def get_action_executor(
         PermissionService,
     )
 
+    from app.services.actions.publish_knowledge_service import (
+        PublishKnowledgeService,
+    )
+
+    settings = get_settings()
+
+    api_key = (
+        settings.openai_api_key
+        .get_secret_value()
+        .strip()
+        if settings.openai_api_key is not None
+        else None
+    )
+
+    retrieval_service = build_knowledge_retriever(
+        session=session,
+        settings=settings,
+        api_key=api_key,
+    )
+
+    multi_query_retrieval = (
+        MultiQueryRetrievalService(
+            retrieval_service
+        )
+    )
+
+    context_service = (
+        MultiQueryKnowledgeContextService(
+            multi_query_retrieval
+        )
+    )
+
+    publish_service = PublishKnowledgeService(
+        context_service=context_service,
+        writer=get_mediawiki_writer(),
+    )
+
     return ActionExecutor(
         registry=build_action_registry(
             publish_handler=(
-                __build_publish_handler()
+                __build_publish_handler(
+                    publish_service
+                )
             ),
         ),
         repository=ApprovalRequestRepository(
@@ -231,13 +376,15 @@ def get_action_executor(
 
 
 
-def __build_publish_handler():
+def __build_publish_handler(
+    publish_service,
+):
     from app.services.actions.handlers.publish_knowledge import (
         build_publish_knowledge_handler,
     )
 
     return build_publish_knowledge_handler(
-        get_mediawiki_writer
+        lambda: publish_service
     )
 
 

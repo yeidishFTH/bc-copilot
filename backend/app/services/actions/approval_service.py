@@ -36,30 +36,18 @@ class ApprovalService:
         action_request: ActionRequest,
     ) -> ApprovalRequest:
 
-        print(
-            "DEBUG ApprovalService action_request:",
-            action_request
-        )
-
         payload = {
             "document": action_request.document,
+            "target": "mediawiki",
+            "operation": "publish",
+            "requested_action": action_request.action,
         }
-
-        print(
-            "DEBUG CREATE PAYLOAD:",
-            payload
-        )
 
         approval = ApprovalRequest(
             action=action_request.action,
             requested_by=requester_id,
             payload=payload,
             status="PENDING",
-        )
-
-        print(
-            "DEBUG MODEL PAYLOAD:",
-            approval.payload
         )
 
         return await self._repository.create(
@@ -147,6 +135,55 @@ class ApprovalService:
         await self.commit()
 
         return approval
+
+
+    async def list_pending(
+        self,
+        *,
+        limit: int = 50,
+    ) -> list[ApprovalRequest]:
+
+        return await self._repository.list_pending(
+            limit=limit
+        )
+
+
+
+    async def cancel(
+        self,
+        *,
+        approval_id: UUID,
+        cancelled_by: UUID,
+    ) -> ApprovalRequest:
+
+        approval = await self.get(
+            approval_id
+        )
+
+        if approval is None:
+            raise ValueError(
+                "Approval request not found"
+            )
+
+        if approval.status != "PENDING":
+            raise ValueError(
+                "Only pending requests can be cancelled"
+            )
+
+        approval.status = "CANCELLED"
+        approval.approved_by = cancelled_by
+        approval.approved_at = datetime.now(
+            timezone.utc
+        )
+
+        approval = await self._repository.save(
+            approval
+        )
+
+        await self.commit()
+
+        return approval
+
 
 
     async def commit(self) -> None:

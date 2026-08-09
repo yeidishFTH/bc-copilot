@@ -65,5 +65,64 @@ class ApprovalRequestRepository:
         return result.scalar_one_or_none()
 
 
+
+
+    async def list_recent(
+        self,
+        *,
+        limit: int = 50,
+    ) -> list[ApprovalRequest]:
+
+        result = await self._session.execute(
+            select(ApprovalRequest)
+            .order_by(
+                ApprovalRequest.created_at.desc()
+            )
+            .limit(limit)
+        )
+
+        return list(
+            result.scalars().all()
+        )
+
+
+    async def list_pending(
+        self,
+        *,
+        limit: int = 50,
+    ) -> list[ApprovalRequest]:
+
+        result = await self._session.execute(
+            select(ApprovalRequest)
+            .where(
+                ApprovalRequest.status == "PENDING"
+            )
+            .where(
+                ApprovalRequest.action == "publish_knowledge"
+            )
+            .where(
+                ApprovalRequest.payload["document"].astext.is_not(None)
+            )
+            .where(
+                ApprovalRequest.payload["document"].astext != ""
+            )
+            .where(
+                ApprovalRequest.payload["target"].astext == "mediawiki"
+            )
+            .where(
+                ApprovalRequest.payload["operation"].astext == "publish"
+            )
+            .order_by(
+                ApprovalRequest.created_at.desc()
+            )
+            .limit(limit)
+        )
+
+        return list(
+            result.scalars().all()
+        )
+
+
+
     async def commit(self) -> None:
         await self._session.commit()

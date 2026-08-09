@@ -583,6 +583,16 @@ class UserAccount(Base):
         cascade="all, delete-orphan",
     )
 
+    requested_approvals: Mapped[list["ApprovalRequest"]] = relationship(
+        foreign_keys="ApprovalRequest.requested_by",
+        back_populates="requester",
+    )
+
+    approved_approvals: Mapped[list["ApprovalRequest"]] = relationship(
+        foreign_keys="ApprovalRequest.approved_by",
+        back_populates="approver",
+    )
+
 
 class AuthSession(Base):
     __tablename__ = "auth_sessions"
@@ -711,4 +721,14 @@ class ApprovalRequest(Base):
 
     execution_error: Mapped[str | None] = mapped_column(
         Text,
+    )
+
+    requester: Mapped["UserAccount"] = relationship(
+        foreign_keys=[requested_by],
+        back_populates="requested_approvals",
+    )
+
+    approver: Mapped["UserAccount | None"] = relationship(
+        foreign_keys=[approved_by],
+        back_populates="approved_approvals",
     )

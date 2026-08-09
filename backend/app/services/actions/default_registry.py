@@ -5,10 +5,6 @@ from collections.abc import Callable
 from .registry import ActionRegistry
 from .models import ActionDefinition
 
-from .handlers.publish_knowledge import (
-    build_publish_knowledge_handler,
-)
-
 
 async def _mock_publish_knowledge(
     payload: dict,
